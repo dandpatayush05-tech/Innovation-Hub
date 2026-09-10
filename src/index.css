@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Special Elite", serif;
+  --font-display: "Special Elite", serif;
+  
+  --color-vstara-dark: #0a0a0a;
+  --color-vstara-text: #1a1a1a;
+  --color-vstara-muted: #767676;
+  --color-vstara-prompt: #905831;
+}
+
+@layer base {
+  body {
+    font-family: 'Special Elite', serif;
+    overflow-x: hidden;
+    background: #fff;
+  }
+}
