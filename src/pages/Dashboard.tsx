@@ -2,14 +2,25 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Plane, LogOut, Map, Calendar, Loader2, User as UserIcon } from 'lucide-react';
+import { getUserBookings, getUserGuideBookings } from '../api/bookings';
+import { getDestinations } from '../api/destinations';
+import type { Booking, GuideBooking } from '../api/bookings';
+import type { Destination } from '../api/destinations';
+import { Plane, Calendar, Loader2, Map, Building2, Compass, ArrowRight, Bus, Car, Ticket, CreditCard } from 'lucide-react';
 
 export const Dashboard = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [itineraries, setItineraries] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [guideBookings, setGuideBookings] = useState<GuideBooking[]>([]);
+  const [autoBookings, setAutoBookings] = useState<any[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [unifiedBookings, setUnifiedBookings] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  const [activeTab, setActiveTab] = useState('Hotels');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -21,12 +32,20 @@ export const Dashboard = () => {
     const fetchData = async () => {
       if (!user) return;
       try {
-        const [itinerariesRes, bookingsRes] = await Promise.all([
+        const [itinerariesRes, bookingsRes, guideBookingsRes, destinationsRes, autoBookingsRes, unifiedRes] = await Promise.all([
           api.get(`/itineraries/user/${user.id}`),
-          api.get(`/bookings/user/${user.id}`)
+          getUserBookings(user.id),
+          getUserGuideBookings(user.id),
+          getDestinations({ limit: 4 }),
+          import('../api/auto').then(m => m.getUserAutoBookings(user.id)),
+          import('../api/bookings').then(m => m.getUnifiedBookings())
         ]);
-        setItineraries(itinerariesRes.data.itineraries || []);
-        setBookings(bookingsRes.data.bookings || []);
+        setItineraries(itinerariesRes.data?.itineraries || []);
+        setBookings(bookingsRes.bookings || []);
+        setGuideBookings(guideBookingsRes.guideBookings || []);
+        setDestinations(destinationsRes.data || []);
+        setAutoBookings(autoBookingsRes.bookings || []);
+        setUnifiedBookings(unifiedRes.bookings || []);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -37,9 +56,9 @@ export const Dashboard = () => {
     fetchData();
   }, [user]);
 
-  if (authLoading) {
+  if (authLoading || loadingData) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+      <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#C84B31]" />
       </div>
     );
@@ -48,188 +67,379 @@ export const Dashboard = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7]">
-      {/* Navigation */}
-      <nav className="border-b border-black/5 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            <Link to="/" className="flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity">
-              <Plane className="w-8 h-8" />
-              <span className="text-2xl font-serif tracking-tight">Vstara</span>
-            </Link>
+    <div className="p-6 md:p-8 space-y-12">
+      
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-[#2A2A2A] to-black rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
+        <div className="relative z-10 max-w-3xl">
+          <h1 className="text-4xl md:text-5xl font-serif mb-4">Where will your next journey take you?</h1>
+          <p className="text-white/70 text-lg mb-8">Plan, book, and manage your entire trip in one place.</p>
+          
+          <div className="bg-white rounded-2xl p-4 shadow-xl">
+            <div className="flex space-x-6 border-b border-black/10 pb-4 mb-4 overflow-x-auto no-scrollbar">
+              {['Hotels', 'Flights', 'Buses', 'Auto', 'Experiences'].map((tab) => (
+                <button 
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center space-x-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                    activeTab === tab ? 'text-[#C84B31]' : 'text-[#2A2A2A]/60 hover:text-[#2A2A2A]'
+                  }`}
+                >
+                  {tab === 'Hotels' && <Building2 className="w-4 h-4" />}
+                  {tab === 'Flights' && <Plane className="w-4 h-4" />}
+                  {tab === 'Buses' && <Bus className="w-4 h-4" />}
+                  {tab === 'Auto' && <Car className="w-4 h-4" />}
+                  {tab === 'Experiences' && <Compass className="w-4 h-4" />}
+                  <span>{tab}</span>
+                </button>
+              ))}
+            </div>
             
-            <div className="flex items-center space-x-6">
-              <span className="text-[#2A2A2A]/80 font-medium hidden sm:block">Hello, {user.name}</span>
-              <button 
-                onClick={logout}
-                className="flex items-center space-x-2 text-[#2A2A2A]/60 hover:text-[#C84B31] transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Logout</span>
-              </button>
+            <div className="flex flex-col md:flex-row gap-4">
+              {activeTab === 'Flights' ? (
+                <>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">From</label>
+                    <input 
+                      type="text" 
+                      placeholder="Departure City" 
+                      id="flight-dep-input"
+                      className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">To</label>
+                    <input 
+                      type="text" 
+                      placeholder="Arrival City" 
+                      id="flight-arr-input"
+                      className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" 
+                    />
+                  </div>
+                </>
+              ) : activeTab === 'Buses' ? (
+                <>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">From</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Paris" 
+                      id="bus-src-input"
+                      className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">To</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. London" 
+                      id="bus-dst-input"
+                      className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" 
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Destination</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Paris, France" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Dates</label>
+                    <input type="text" placeholder="Add dates" className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" />
+                  </div>
+                </>
+              )}
+              
+              <div className="flex-1">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">
+                  {activeTab === 'Flights' || activeTab === 'Buses' ? 'Passengers' : 'Travelers'}
+                </label>
+                <input type="text" placeholder={activeTab === 'Flights' ? "1 Passenger" : "2 adults"} className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]" />
+              </div>
+              <div className="flex items-end">
+                <button 
+                  onClick={() => {
+                    if (activeTab === 'Hotels') {
+                      navigate(`/dashboard/hotels?q=${encodeURIComponent(searchQuery)}`);
+                    } else if (activeTab === 'Flights') {
+                      const dep = (document.getElementById('flight-dep-input') as HTMLInputElement)?.value || '';
+                      const arr = (document.getElementById('flight-arr-input') as HTMLInputElement)?.value || '';
+                      navigate(`/dashboard/flights?dep=${encodeURIComponent(dep)}&arr=${encodeURIComponent(arr)}`);
+                    } else if (activeTab === 'Buses') {
+                      const src = (document.getElementById('bus-src-input') as HTMLInputElement)?.value || '';
+                      const dst = (document.getElementById('bus-dst-input') as HTMLInputElement)?.value || '';
+                      navigate(`/dashboard/buses?source=${encodeURIComponent(src)}&destination=${encodeURIComponent(dst)}`);
+                    } else if (activeTab === 'Auto') {
+                      navigate(`/dashboard/auto`);
+                    }
+                  }}
+                  className="w-full md:w-auto bg-[#C84B31] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#A63A25] transition-colors"
+                >
+                  Search
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </nav>
+      </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif text-[#2A2A2A] mb-4">Your Journey Awaits</h1>
-          <p className="text-lg text-[#2A2A2A]/60 font-light max-w-2xl">
-            Access your AI-generated itineraries and manage your upcoming bookings.
-          </p>
+      {/* Upcoming Bookings */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Upcoming Bookings</h2>
+          {bookings.length > 0 && <Link to="/destinations" className="text-sm font-medium text-[#C84B31]">Book another</Link>}
         </div>
-
-        {/* Dashboard Content */}
-        <div className="space-y-12">
-
-          {/* Account Section */}
-          <section>
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-serif text-[#2A2A2A] flex items-center gap-3">
-                <UserIcon className="w-6 h-6 text-[#C84B31]" />
-                My Account
-              </h2>
+        
+        {bookings.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
+              <Calendar className="w-8 h-8 text-[#2A2A2A]/40" />
             </div>
-            <div className="bg-white rounded-3xl p-8 border border-black/5 flex flex-col sm:flex-row items-center justify-between gap-6 hover:shadow-lg transition-shadow">
-              <div>
-                <h3 className="text-xl font-medium text-[#2A2A2A] mb-1">{user.name}</h3>
-                <p className="text-[#2A2A2A]/60">{user.email}</p>
-                <div className="mt-3">
-                  <span className="bg-[#FDFBF7] px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider text-[#C84B31] border border-[#C84B31]/20">
-                    {user.role} Account
+            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming stays</h3>
+            <p className="text-[#2A2A2A]/60 mb-6">Your next adventure starts here.</p>
+            <Link to="/destinations" className="bg-black text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#333] transition-colors">
+              Find a Hotel
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="bg-white rounded-3xl p-5 border border-black/5 flex gap-4 hover:shadow-lg transition-shadow">
+                {booking.hotel?.image_url && (
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                    <img src={booking.hotel.image_url} alt={booking.hotel.name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex-1 flex flex-col justify-center">
+                  <span className={`self-start px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {booking.status}
                   </span>
+                  <h3 className="font-medium text-[#2A2A2A] leading-tight mb-1">{booking.hotel?.name}</h3>
+                  <p className="text-xs text-[#2A2A2A]/60">
+                    {new Date(booking.check_in_date).toLocaleDateString()} &mdash; {new Date(booking.check_out_date).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
-              <button className="text-sm font-medium bg-[#FDFBF7] border border-black/10 px-6 py-2.5 rounded-full hover:bg-black/5 transition-colors">
-                Edit Profile
-              </button>
-            </div>
-          </section>
-          
-          {/* Itineraries Section */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-serif text-[#2A2A2A] flex items-center gap-3">
-                <Map className="w-6 h-6 text-[#C84B31]" />
-                Saved Itineraries
-              </h2>
-              <Link to="/" className="text-sm font-medium text-[#C84B31] hover:text-[#A63A25] transition-colors">
-                + Create New
-              </Link>
-            </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-            {loadingData ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-[#C84B31]" />
-              </div>
-            ) : itineraries.length === 0 ? (
-              <div className="bg-white rounded-3xl p-8 border border-black/5 text-center">
-                <p className="text-[#2A2A2A]/60 mb-4">You haven't generated any itineraries yet.</p>
-                <Link to="/" className="inline-block bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
-                  Plan a trip
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {itineraries.map((itinerary) => (
-                  <div key={itinerary._id} className="bg-white rounded-3xl p-6 border border-black/5 hover:shadow-lg transition-shadow group">
-                    <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">{itinerary.destination}</h3>
-                    <p className="text-sm text-[#2A2A2A]/60 mb-4 line-clamp-2">{itinerary.prompt}</p>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="bg-[#FDFBF7] px-3 py-1 rounded-full text-[#2A2A2A]/80 border border-black/5">
-                        {itinerary.days?.length || 0} Days
-                      </span>
-                      <button className="text-[#C84B31] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                        View Details <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Bookings Section */}
-          <section>
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-serif text-[#2A2A2A] flex items-center gap-3">
-                <Calendar className="w-6 h-6 text-[#C84B31]" />
-                Upcoming Bookings
-              </h2>
-            </div>
-            
-            {loadingData ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-[#C84B31]" />
-              </div>
-            ) : bookings.length === 0 ? (
-              <div className="bg-white rounded-3xl p-8 border border-black/5 flex flex-col items-center justify-center text-center">
-                <p className="text-[#2A2A2A]/60 mb-2">No upcoming bookings found.</p>
-                <p className="text-sm text-[#2A2A2A]/40">Explore our destinations and find your perfect stay.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {bookings.map((booking) => (
-                  <div key={booking._id} className="bg-white rounded-3xl p-6 border border-black/5 flex flex-col sm:flex-row gap-6 hover:shadow-lg transition-shadow">
-                    {/* If hotel is populated, show image */}
-                    {booking.hotelId?.imageUrl && (
-                      <div className="w-full sm:w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0">
-                        <img 
-                          src={booking.hotelId.imageUrl} 
-                          alt={booking.hotelId.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-medium text-[#2A2A2A]">
-                            {booking.hotelId?.name || 'Hotel Booking'}
-                          </h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${
-                            booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                            booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {booking.status}
-                          </span>
-                        </div>
-                        
-                        <p className="text-sm text-[#2A2A2A]/60 mb-1">
-                          {new Date(booking.checkInDate).toLocaleDateString()} &mdash; {new Date(booking.checkOutDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-[#2A2A2A]/60">
-                          {booking.guests} {booking.guests === 1 ? 'Guest' : 'Guests'} • {booking.rooms} {booking.rooms === 1 ? 'Room' : 'Rooms'}
-                        </p>
-                      </div>
-                      
-                      <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
-                        <span className="text-lg font-medium text-[#2A2A2A]">
-                          ${booking.totalPrice}
-                        </span>
-                        <button className="text-sm font-medium text-[#C84B31] hover:text-[#A63A25] transition-colors">
-                          Manage
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
+      {/* Upcoming Experiences */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Upcoming Experiences</h2>
         </div>
-      </main>
+        
+        {guideBookings.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
+              <Ticket className="w-8 h-8 text-[#2A2A2A]/40" />
+            </div>
+            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming experiences</h3>
+            <p className="text-[#2A2A2A]/60 mb-6">Discover tours and activities for your trip.</p>
+            <Link to="/destinations" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
+              Explore Experiences
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {guideBookings.map((booking) => (
+              <div key={booking.id} className="bg-white rounded-3xl p-5 border border-black/5 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {booking.status}
+                  </span>
+                  <span className="font-medium text-[#C84B31]">${booking.total_price}</span>
+                </div>
+                <h3 className="font-medium text-[#2A2A2A] mb-1">{booking.tour?.name || 'Tour Booking'}</h3>
+                <p className="text-sm text-[#2A2A2A]/60 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(booking.booking_date).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Upcoming Local Transport */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Upcoming Local Transport</h2>
+        </div>
+        
+        {autoBookings.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
+              <Car className="w-8 h-8 text-[#2A2A2A]/40" />
+            </div>
+            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming rides</h3>
+            <p className="text-[#2A2A2A]/60 mb-6">Book an auto or cab for your local commute.</p>
+            <button onClick={() => { setActiveTab('Auto'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
+              Book Transport
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {autoBookings.map((booking) => (
+              <div key={booking.id} className="bg-white rounded-3xl p-5 border border-black/5 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    ['confirmed', 'completed'].includes(booking.status) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {booking.status}
+                  </span>
+                  <span className="font-medium text-[#2A2A2A] capitalize text-sm">{booking.vehicle_type.replace('_', ' ')}</span>
+                </div>
+                <div className="space-y-2 mb-3">
+                  <p className="text-sm text-[#2A2A2A]"><span className="text-[#2A2A2A]/60 text-xs uppercase mr-2">From</span> {booking.pickup_location}</p>
+                  <p className="text-sm text-[#2A2A2A]"><span className="text-[#2A2A2A]/60 text-xs uppercase mr-2">To</span> {booking.dropoff_location}</p>
+                </div>
+                <p className="text-sm text-[#2A2A2A]/60 flex items-center gap-2 border-t border-black/5 pt-3">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(booking.start_date).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Saved Itineraries */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Saved Itineraries</h2>
+          {itineraries.length > 0 && <Link to="/itineraries/generate" className="text-sm font-medium text-[#C84B31]">+ New</Link>}
+        </div>
+
+        {itineraries.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
+              <Map className="w-8 h-8 text-[#2A2A2A]/40" />
+            </div>
+            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No itineraries yet</h3>
+            <p className="text-[#2A2A2A]/60 mb-6">Let AI plan the perfect trip for you.</p>
+            <Link to="/itineraries/generate" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
+              Plan with AI
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {itineraries.map((itinerary) => (
+              <div key={itinerary.id} className="bg-white rounded-3xl p-6 border border-black/5 hover:shadow-lg transition-shadow group flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xl font-medium text-[#2A2A2A] mb-1">{itinerary.destination}</h3>
+                  {itinerary.estimated_budget && (
+                    <p className="text-sm text-emerald-600 font-medium mb-2">Est. {itinerary.estimated_budget}</p>
+                  )}
+                  <p className="text-sm text-[#2A2A2A]/60 mb-4 line-clamp-2">{itinerary.prompt}</p>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="bg-[#FDFBF7] px-3 py-1 rounded-full text-[#2A2A2A]/80 border border-black/5">
+                    {itinerary.days?.length || 0} Days
+                  </span>
+                  <Link
+                    to={`/itineraries/${itinerary.id}`}
+                    className="text-[#C84B31] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                  >
+                    View Details <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Explore Destinations */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Explore Destinations</h2>
+          <Link to="/destinations" className="text-sm font-medium text-[#C84B31]">View all</Link>
+        </div>
+        
+        {destinations.length === 0 ? (
+          <div className="bg-white rounded-3xl p-8 border border-black/5 text-center">
+            <p className="text-[#2A2A2A]/60">Check back later for featured destinations.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {destinations.map(dest => (
+              <Link key={dest.id} to={`/destinations/${dest.id}`} className="group relative rounded-3xl overflow-hidden aspect-[3/4] block">
+                <img src={dest.image_url} alt={dest.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <h3 className="text-white font-serif text-xl mb-1">{dest.name}</h3>
+                  <p className="text-white/80 text-sm">{dest.country}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Recent Transactions */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif text-[#2A2A2A]">Recent Transactions</h2>
+        </div>
+        
+        {unifiedBookings.filter(b => b.amount != null).length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
+              <CreditCard className="w-8 h-8 text-[#2A2A2A]/40" />
+            </div>
+            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No recent transactions</h3>
+            <p className="text-[#2A2A2A]/60">Your payment history will appear here once you make a booking.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-black/5 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#FDFBF7] border-b border-black/5">
+                  <th className="py-4 px-6 font-medium text-[#2A2A2A]/60 text-sm">Date</th>
+                  <th className="py-4 px-6 font-medium text-[#2A2A2A]/60 text-sm">Booking</th>
+                  <th className="py-4 px-6 font-medium text-[#2A2A2A]/60 text-sm">Type</th>
+                  <th className="py-4 px-6 font-medium text-[#2A2A2A]/60 text-sm text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unifiedBookings.filter(b => b.amount != null).slice(0, 5).map((booking) => (
+                  <tr key={booking.id} className="border-b border-black/5 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-4 px-6 text-sm text-[#2A2A2A]">
+                      {new Date(booking.date).toLocaleDateString()}
+                    </td>
+                    <td className="py-4 px-6">
+                      <p className="font-medium text-[#2A2A2A]">{booking.title}</p>
+                      <p className="text-xs text-[#2A2A2A]/60">{booking.subtitle}</p>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="capitalize px-2 py-1 bg-gray-100 rounded text-xs text-[#2A2A2A]">{booking.type}</span>
+                    </td>
+                    <td className="py-4 px-6 text-right font-medium text-[#2A2A2A]">
+                      ₹{booking.amount}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
     </div>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-  </svg>
-);

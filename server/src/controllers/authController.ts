@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import User from '../models/User';
+import { supabase } from '../config/supabase';
 import { generateTokens, setRefreshCookie, clearRefreshCookie } from '../services/auth';
 import { AuthRequest } from '../middleware/authGuard';
 import crypto from 'crypto';
@@ -10,7 +10,7 @@ const hashToken = (token: string) => crypto.createHash('sha256').update(token).d
 export const register = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
-  const existingUser = await User.findOne({ email });
+  const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).single();
   if (existingUser) {
     return res.status(409).json({ error: { message: 'Email already in use' } });
   }
@@ -18,12 +18,23 @@ export const register = async (req: Request, res: Response) => {
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  const user = new User({ name, email, passwordHash });
+  const { data: user, error } = await supabase
+    .from('users')
+    .insert({ name, email, password_hash: passwordHash, role: 'traveler' })
+    .select()
+    .single();
+
+  if (error || !user) {
+    return res.status(500).json({ error: { message: 'Failed to create user' } });
+  }
 
   const { accessToken, refreshToken } = generateTokens(user.id, user.role);
-  user.refreshTokenHash = hashToken(refreshToken);
   
-  await user.save();
+  await supabase
+    .from('users')
+    .update({ refresh_token_hash: hashToken(refreshToken) })
+    .eq('id', user.id);
+
   setRefreshCookie(res, refreshToken);
 
   res.status(201).json({
@@ -36,20 +47,24 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email }).select('+passwordHash');
+  const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
+  
   if (!user) {
     return res.status(401).json({ error: { message: 'Invalid credentials' } });
   }
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  const isMatch = await bcrypt.compare(password, user.password_hash);
   if (!isMatch) {
     return res.status(401).json({ error: { message: 'Invalid credentials' } });
   }
 
   const { accessToken, refreshToken } = generateTokens(user.id, user.role);
-  user.refreshTokenHash = hashToken(refreshToken);
   
-  await user.save();
+  await supabase
+    .from('users')
+    .update({ refresh_token_hash: hashToken(refreshToken) })
+    .eq('id', user.id);
+
   setRefreshCookie(res, refreshToken);
 
   res.json({
@@ -65,16 +80,21 @@ export const refresh = async (req: Request, res: Response) => {
     return res.status(401).json({ error: { message: 'Unauthorized: No refresh token' } });
   }
 
-  const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) });
+  const hashedToken = hashToken(refreshToken);
+  const { data: user } = await supabase.from('users').select('*').eq('refresh_token_hash', hashedToken).single();
+  
   if (!user) {
     clearRefreshCookie(res);
     return res.status(401).json({ error: { message: 'Unauthorized: Invalid refresh token' } });
   }
 
   const { accessToken, refreshToken: newRefreshToken } = generateTokens(user.id, user.role);
-  user.refreshTokenHash = hashToken(newRefreshToken);
   
-  await user.save();
+  await supabase
+    .from('users')
+    .update({ refresh_token_hash: hashToken(newRefreshToken) })
+    .eq('id', user.id);
+
   setRefreshCookie(res, newRefreshToken);
 
   res.json({ accessToken });
@@ -84,14 +104,15 @@ export const logout = async (req: AuthRequest, res: Response) => {
   clearRefreshCookie(res);
 
   if (req.user) {
-    await User.findByIdAndUpdate(req.user.id, { refreshTokenHash: null });
+    await supabase.from('users').update({ refresh_token_hash: null }).eq('id', req.user.id);
   }
 
   res.json({ message: 'Logged out successfully' });
 };
 
 export const getMe = async (req: AuthRequest, res: Response) => {
-  const user = await User.findById(req.user?.id);
+  const { data: user } = await supabase.from('users').select('*').eq('id', req.user?.id).single();
+  
   if (!user) {
     return res.status(404).json({ error: { message: 'User not found' } });
   }
@@ -101,19 +122,25 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
 export const updateMe = async (req: AuthRequest, res: Response) => {
   const { name, email } = req.body;
-  const updates: any = {};
+  const updates: Record<string, unknown> = {};
 
   if (name) updates.name = name;
   if (email) {
-    const existing = await User.findOne({ email });
+    const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
     if (existing && existing.id !== req.user?.id) {
       return res.status(409).json({ error: { message: 'Email already in use' } });
     }
     updates.email = email;
   }
 
-  const user = await User.findByIdAndUpdate(req.user?.id, updates, { new: true });
-  if (!user) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', req.user?.id)
+    .select()
+    .single();
+
+  if (error || !user) {
     return res.status(404).json({ error: { message: 'User not found' } });
   }
 

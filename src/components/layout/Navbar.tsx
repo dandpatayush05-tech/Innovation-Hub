@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, Menu, X } from 'lucide-react';
+import { Map, Menu, X, Search } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { navLinks } from '../../data/constants';
 
@@ -33,6 +33,9 @@ export const Navbar = () => {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
+            <a href="/search" className="text-gray-600 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded p-1" aria-label="Search">
+              <Search className="w-5 h-5" />
+            </a>
             {navLinks.map((link) => (
               <a 
                 key={link.name} 
@@ -48,13 +51,18 @@ export const Navbar = () => {
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <button 
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            className="md:hidden text-gray-900 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
-          </button>
+          <div className="flex items-center gap-4 md:hidden">
+            <a href="/search" className="text-gray-600 hover:text-primary p-2">
+              <Search className="w-5 h-5" />
+            </a>
+            <button 
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              className="text-gray-900 p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            </button>
+          </div>
         </div>
       </div>
 

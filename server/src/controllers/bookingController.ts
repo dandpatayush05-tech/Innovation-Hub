@@ -1,59 +1,138 @@
 import { Request, Response } from 'express';
-import Booking from '../models/Booking';
-import GuideBooking from '../models/GuideBooking';
-import Hotel from '../models/Hotel';
-import Business from '../models/Business';
+import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
+import { createNotification } from './notificationController';
 
-export const createBooking = async (req: AuthRequest, res: Response) => {
-  const booking = new Booking({
-    ...req.body,
-    userId: req.user?.id
-  });
-  await booking.save();
-  res.status(201).json({ message: 'Booking created successfully', booking });
+export const getUnifiedBookings = async (req: AuthRequest, res: Response) => {
+  const { data: bookings, error } = await supabase
+    .from('unified_bookings')
+    .select('*')
+    .eq('user_id', req.user?.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching unified bookings:', error);
+    return res.status(500).json({ error: { message: 'Failed to fetch bookings' } });
+  }
+
+  res.json({ bookings: bookings || [] });
 };
 
-export const getUserBookings = async (req: AuthRequest, res: Response) => {
-  if (req.user?.id !== req.params.userId && req.user?.role !== 'admin') {
+export const cancelBooking = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { type } = req.body; // 'hotel', 'flight', 'bus', 'auto', 'experience'
+
+  let tableName = '';
+  switch (type) {
+    case 'hotel': tableName = 'bookings'; break;
+    case 'flight': tableName = 'flight_bookings'; break;
+    case 'bus': tableName = 'bus_bookings'; break;
+    case 'auto': tableName = 'auto_bookings'; break;
+    case 'experience': tableName = 'guide_bookings'; break;
+    default: return res.status(400).json({ error: { message: 'Invalid booking type' } });
+  }
+
+  // Ensure the booking belongs to the user
+  const { data: existing } = await supabase.from(tableName).select('user_id').eq('id', id).single();
+  if (!existing || existing.user_id !== req.user?.id) {
     return res.status(403).json({ error: { message: 'Forbidden' } });
   }
 
-  const bookings = await Booking.find({ userId: req.params.userId }).populate('hotelId');
-  res.json({ bookings });
-};
+  const { error } = await supabase
+    .from(tableName)
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('id', id);
 
-export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
-  const booking = await Booking.findById(req.params.id);
-  if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-
-  // Verify the user owns the business that owns the hotel
-  const hotel = await Hotel.findById(booking.hotelId);
-  const business = await Business.findOne({ userId: req.user?.id });
-
-  if (!business || !hotel || hotel.businessId.toString() !== business.id.toString()) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this hotel' } });
+  if (error) {
+    return res.status(500).json({ error: { message: 'Failed to cancel booking' } });
   }
 
-  booking.status = req.body.status;
-  await booking.save();
-  res.json({ message: 'Booking status updated', booking });
+  // Trigger Notification
+  if (req.user?.id) {
+    await createNotification(
+      req.user.id,
+      'booking_cancelled',
+      'Booking Cancelled',
+      `Your ${type} booking has been cancelled successfully.`
+    );
+  }
+
+  res.json({ message: 'Booking cancelled successfully' });
+};
+
+export const createBooking = async (req: AuthRequest, res: Response) => {
+  const { hotel_id, check_in_date, check_out_date, guests, rooms, total_price, occasion } = req.body;
+
+  const { data: booking, error } = await supabase
+    .from('bookings')
+    .insert({
+      user_id: req.user?.id,
+      hotel_id,
+      check_in: check_in_date,
+      check_out: check_out_date,
+      guests,
+      occasion,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error inserting booking:', error);
+    return res.status(500).json({ error: { message: 'Failed to create booking', details: error.message } });
+  }
+
+  res.status(201).json({ booking, message: 'Booking created successfully' });
 };
 
 export const createGuideBooking = async (req: AuthRequest, res: Response) => {
-  const guideBooking = new GuideBooking({
-    ...req.body,
-    userId: req.user?.id
-  });
-  await guideBooking.save();
-  res.status(201).json({ message: 'Guide booking created successfully', guideBooking });
+  const { tour_id, booking_date, participants, total_price, occasion } = req.body;
+
+  const { data: booking, error } = await supabase
+    .from('guide_bookings')
+    .insert({
+      user_id: req.user?.id,
+      business_id: tour_id,
+      date: booking_date,
+      notes: `Participants: ${participants}. Total: $${total_price}`,
+      occasion,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error inserting guide booking:', error);
+    return res.status(500).json({ error: { message: 'Failed to create guide booking', details: error.message } });
+  }
+
+  res.status(201).json({ booking, message: 'Guide booking created successfully' });
+};
+
+export const getUserBookings = async (req: AuthRequest, res: Response) => {
+  const { data: bookings, error } = await supabase
+    .from('bookings')
+    .select('*, hotel:hotels(*)')
+    .eq('user_id', req.user?.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: { message: 'Failed to fetch bookings' } });
+  }
+
+  res.json({ bookings: bookings || [] });
 };
 
 export const getUserGuideBookings = async (req: AuthRequest, res: Response) => {
-  if (req.user?.id !== req.params.userId && req.user?.role !== 'admin') {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+  const { data: bookings, error } = await supabase
+    .from('guide_bookings')
+    .select('*, guide:guides(*)')
+    .eq('user_id', req.user?.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: { message: 'Failed to fetch guide bookings' } });
   }
 
-  const guideBookings = await GuideBooking.find({ userId: req.params.userId }).populate('businessId');
-  res.json({ guideBookings });
+  res.json({ bookings: bookings || [] });
 };

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import api from '../api/axios';
-
 export interface User {
   id: string;
   name: string;
@@ -29,6 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const { data } = await api.get('/auth/me');
           setUser(data.user);
         } catch (error) {
+          console.error(error);
           localStorage.removeItem('accessToken');
         }
       }

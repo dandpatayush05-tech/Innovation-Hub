@@ -1,12 +1,21 @@
 import React, { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Testimonials } from './Testimonials';
 
-const NavButton = ({ children }: { children: React.ReactNode }) => (
-  <button className="bg-transparent border-none cursor-pointer font-sans text-[15px] font-medium uppercase text-vstara-text tracking-[0.04em] transition-opacity hover:opacity-55">
-    {children}
-  </button>
-);
+const NavButton = ({ children, to }: { children: React.ReactNode, to?: string }) => {
+  const className = "bg-transparent border-none cursor-pointer font-sans text-[15px] font-medium uppercase text-vstara-text tracking-[0.04em] transition-opacity hover:opacity-55 no-underline";
+  
+  if (to) {
+    return <Link to={to} className={className}>{children}</Link>;
+  }
+  
+  return (
+    <button className={className}>
+      {children}
+    </button>
+  );
+};
 
 export const Hero = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +54,7 @@ export const Hero = () => {
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 flex gap-8 max-md:hidden">
-            <NavButton>Discover</NavButton>
+            <NavButton to="/destinations">Discover</NavButton>
             <NavButton>Pricing</NavButton>
             <NavButton>FAQs</NavButton>
           </div>
@@ -54,7 +63,7 @@ export const Hero = () => {
             <Link to="/login" className="bg-transparent border-none cursor-pointer font-sans text-[15px] font-semibold uppercase text-[#292929] tracking-[0.04em] transition-opacity hover:opacity-55 max-md:hidden">
               Login
             </Link>
-            <Link to="/login" className="bg-vstara-dark text-[#fafafa] border-none cursor-pointer font-sans text-[15px] font-medium uppercase tracking-[0.04em] px-5 py-3.5 rounded-full transition-all hover:bg-[#333] active:scale-95 no-underline">
+            <Link to="/itineraries/generate" className="bg-vstara-dark text-[#fafafa] border-none cursor-pointer font-sans text-[15px] font-medium uppercase tracking-[0.04em] px-5 py-3.5 rounded-full transition-all hover:bg-[#333] active:scale-95 no-underline">
               Plan My Trip
             </Link>
           </div>
@@ -75,7 +84,7 @@ export const Hero = () => {
               I'm planning a 7-day trip to Japan in October. I love food, hidden cafes, scenic hikes, and want to avoid crowds....
             </p>
 
-            <Link to="/login" className="absolute bottom-[21px] right-[21px] w-[156px] h-14 bg-black border-none rounded-[44px] shadow-[0_0_2px_0_rgba(0,0,0,0.05)] cursor-pointer flex items-center justify-center font-sans text-base font-medium text-[#fafafa] uppercase tracking-[0.02em] transition-all hover:bg-[#333] active:scale-95 no-underline">
+            <Link to="/itineraries/generate" className="absolute bottom-[21px] right-[21px] w-[156px] h-14 bg-black border-none rounded-[44px] shadow-[0_0_2px_0_rgba(0,0,0,0.05)] cursor-pointer flex items-center justify-center font-sans text-base font-medium text-[#fafafa] uppercase tracking-[0.02em] transition-all hover:bg-[#333] active:scale-95 no-underline">
               Plan My Trip
             </Link>
 
@@ -95,6 +104,9 @@ export const Hero = () => {
             </button>
           </div>
         </div>
+
+        {/* Testimonials Section */}
+        <Testimonials />
       </div>
     </section>
   );
