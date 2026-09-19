@@ -41,7 +41,7 @@ const seedDatabase = async () => {
     // Create demo business
     const { data: businessData, error: bizError } = await supabase.from('businesses').insert({
       user_id: businessUserData.id,
-      business_name: 'Vstara Elite Stays',
+      business_name: 'Yatra Setu Elite Stays',
       business_type: 'hotel',
       description: 'Curated premium stays across the Middle East.',
       contact_email: 'contact@vstaraelite.com',

@@ -58,10 +58,10 @@ export const Login = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center items-center px-4">
-      {/* Vstara Logo */}
+      {/* Yatra Setu Logo */}
       <Link to="/" className="absolute top-8 left-8 flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity">
         <Plane className="w-8 h-8" />
-        <span className="text-2xl font-serif tracking-tight">Vstara</span>
+        <span className="text-2xl font-serif tracking-tight">Yatra Setu</span>
       </Link>
 
       <div className="w-full max-w-md">

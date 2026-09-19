@@ -332,7 +332,7 @@ export const BusDetails = () => {
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5">
             <Checkout 
               bookingId={bookingId}
-              bookingType="bus"
+              bookingType="bus_leg"
               onSuccess={() => setStep('success')}
             />
           </div>

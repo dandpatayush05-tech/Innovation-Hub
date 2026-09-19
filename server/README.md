@@ -1,6 +1,6 @@
-# Vstara Backend API
+# Yatra Setu Backend API
 
-This is the production-minded backend for the Vstara travel platform. It uses Node.js, Express, MongoDB, and TypeScript.
+This is the production-minded backend for the Yatra Setu travel platform. It uses Node.js, Express, MongoDB, and TypeScript.
 
 ## Features
 - **JWT Authentication** (Short-lived access tokens, `httpOnly` secure refresh cookies)

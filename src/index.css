@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Special Elite", serif;
-  --font-display: "Special Elite", serif;
+  --font-sans: "Times New Roman", Times, serif;
+  --font-display: "Times New Roman", Times, serif;
   
   --color-vstara-dark: #0a0a0a;
   --color-vstara-text: #1a1a1a;
@@ -12,7 +12,7 @@
 
 @layer base {
   body {
-    font-family: 'Special Elite', serif;
+    font-family: 'Times New Roman', Times, serif;
     overflow-x: hidden;
     background: #fff;
   }

@@ -64,6 +64,10 @@ import tourRoutes from './routes/tourRoutes';
 import placeRoutes from './routes/placeRoutes';
 import transportRoutes from './routes/transportRoutes';
 import tripRoutes from './routes/tripRoutes';
+import myTripsRoutes from './routes/myTripsRoutes';
+import helpAdminRoutes from './routes/admin/help';
+import helpRoutes from './routes/helpRoutes';
+import { authGuard, adminGuard } from './middleware/authGuard';
 
 // Routes
 app.get('/api/health', async (req, res) => {
@@ -87,10 +91,13 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api', bookingRoutes);
 app.use('/api', destinationRoutes);
 app.use('/api', hotelRoutes);
+app.use('/api/admin/help', authGuard, adminGuard, helpAdminRoutes);
+app.use('/api/help', helpRoutes);
 app.use('/api', tourRoutes);
 app.use('/api', placeRoutes);
 app.use('/api', transportRoutes);
 app.use('/api', tripRoutes);
+app.use('/api/trips', myTripsRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);

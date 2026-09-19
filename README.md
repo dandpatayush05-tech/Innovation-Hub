@@ -1,6 +1,6 @@
-# Vstara - Innovation Hub Tourism Ecosystem
+# Yatra Setu - Innovation Hub Tourism Ecosystem
 
-Vstara is a comprehensive, production-ready travel platform designed to provide a unified experience for planning, booking, and managing trips. The platform integrates a modern React frontend with a robust Node.js backend.
+Yatra Setu is a comprehensive, production-ready travel platform designed to provide a unified experience for planning, booking, and managing trips. The platform integrates a modern React frontend with a robust Node.js backend.
 
 ## 🌟 Key Features
 

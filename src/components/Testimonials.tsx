@@ -7,7 +7,7 @@ const reviews = [
     name: "Sarah Jenkins",
     role: "Adventure Traveler",
     image: "https://i.pravatar.cc/150?u=sarah",
-    content: "Vstara completely changed how I plan my trips! The AI understood my need for hidden cafes and scenic trails perfectly. Highly recommended!",
+    content: "Yatra Setu completely changed how I plan my trips! The AI understood my need for hidden cafes and scenic trails perfectly. Highly recommended!",
     rating: 5,
   },
   {
@@ -15,7 +15,7 @@ const reviews = [
     name: "Michael Chen",
     role: "Business Consultant",
     image: "https://i.pravatar.cc/150?u=michael",
-    content: "I used to spend hours researching flights and hotels. Now, I just tell Vstara my schedule, and it builds the perfect itinerary in seconds.",
+    content: "I used to spend hours researching flights and hotels. Now, I just tell Yatra Setu my schedule, and it builds the perfect itinerary in seconds.",
     rating: 5,
   },
   {
@@ -23,7 +23,7 @@ const reviews = [
     name: "Elena Rodriguez",
     role: "Family Vacationer",
     image: "https://i.pravatar.cc/150?u=elena",
-    content: "Planning a trip for a family of 5 is usually a nightmare. Vstara suggested kid-friendly activities that we all actually enjoyed. Truly magical.",
+    content: "Planning a trip for a family of 5 is usually a nightmare. Yatra Setu suggested kid-friendly activities that we all actually enjoyed. Truly magical.",
     rating: 5,
   },
   {

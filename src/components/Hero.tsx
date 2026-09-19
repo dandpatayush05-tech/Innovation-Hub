@@ -47,9 +47,9 @@ export const Hero = () => {
         {/* Navigation bar */}
         <nav className="flex items-center justify-between px-20 max-md:px-6 pt-6 max-md:pt-5 pb-4">
           <div className="flex items-center -space-x-4">
-            <img src="/logo.png" alt="Vstara Logo" className="w-24 h-24 object-contain mix-blend-multiply scale-125" />
+            <img src="/logo.png" alt="Yatra Setu Logo" className="w-24 h-24 object-contain mix-blend-multiply scale-125" />
             <span className="font-display text-[40px] max-md:text-[32px] text-black leading-none select-none mt-2 relative z-10">
-              Vstara
+              Yatra Setu
             </span>
           </div>
 

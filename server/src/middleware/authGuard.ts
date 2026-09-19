@@ -31,3 +31,10 @@ export const authGuard = (req: AuthRequest, res: Response, next: NextFunction) =
   }
 };
 
+export const adminGuard = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ error: { message: 'Forbidden: Admin access required' } });
+  }
+  next();
+};
+

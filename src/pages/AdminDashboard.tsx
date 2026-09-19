@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { getBusinesses, updateBusiness, Business } from '../api/businesses';
 import { getHotels, updateHotel, Hotel } from '../api/hotels';
 import { getTours, updateTour, Tour } from '../api/tours';
+import { HelpManager } from '../components/admin/HelpManager';
 
 interface ContactRequest {
   id: string;
@@ -20,7 +21,7 @@ interface ContactRequest {
 
 export const AdminDashboard = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'tickets' | 'locations' | 'availability'>('tickets');
+  const [activeTab, setActiveTab] = useState<'tickets' | 'locations' | 'availability' | 'help'>('tickets');
   
   const [requests, setRequests] = useState<ContactRequest[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -136,6 +137,12 @@ export const AdminDashboard = () => {
           className={`pb-3 px-2 font-medium border-b-2 transition-colors ${activeTab === 'availability' ? 'border-[#C84B31] text-[#C84B31]' : 'border-transparent text-[#2A2A2A]/60 hover:text-[#2A2A2A]'}`}
         >
           <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Manage Availability</div>
+        </button>
+        <button 
+          onClick={() => setActiveTab('help')}
+          className={`pb-3 px-2 font-medium border-b-2 transition-colors ${activeTab === 'help' ? 'border-[#C84B31] text-[#C84B31]' : 'border-transparent text-[#2A2A2A]/60 hover:text-[#2A2A2A]'}`}
+        >
+          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Help Center</div>
         </button>
       </div>
 
@@ -304,6 +311,10 @@ export const AdminDashboard = () => {
                   </tbody>
                 </table>
                </div>
+            )}
+
+            {activeTab === 'help' && (
+              <HelpManager />
             )}
           </>
         )}

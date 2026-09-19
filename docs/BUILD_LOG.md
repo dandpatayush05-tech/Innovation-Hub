@@ -190,7 +190,7 @@ Row-Level Security (RLS) is enabled on all tables in Supabase. Because this Expr
 ## [Chunk 9] 2026-09-12 - Frontend Discovery & Search UI
 
 ### 1. Destinations Page (`/destinations`)
-- Created a beautiful, responsive grid layout for browsing destinations using the Vstara design system (glassmorphism, clean typography, hover interactions).
+- Created a beautiful, responsive grid layout for browsing destinations using the Yatra Setu design system (glassmorphism, clean typography, hover interactions).
 - Implemented a debounced search bar querying the backend.
 - Integrated the `src/api/destinations.ts` client to handle pagination and searching.
 
@@ -779,7 +779,7 @@ All chunks in Phase 1 have been successfully implemented, audited, and hardened.
 4. Demonstrate filtering by "Upcoming" or "Experiences".
 5. Cancel the booking to show the real-time status update and notification.
 
-> **Status:** The Vstara Tourism dashboard is fully complete and ready for demonstration.
+> **Status:** The Yatra Setu Tourism dashboard is fully complete and ready for demonstration.
 ## [Unplanned Bugfix] 2026-09-13 - Diagnose & Fix Login Hang
 
 ### 1. Diagnosis Results
@@ -793,3 +793,208 @@ All chunks in Phase 1 have been successfully implemented, audited, and hardened.
 - Installed uuid and @types/uuid to resolve the Vite server crash.
 - Restarted the frontend dev server. The login flow now reliably completes in < 500ms for all accounts.
 
+## [Chunk 24] 2026-09-19 - Unified Multimodal Transport Search & Distance-Based Fare Engine (Completed)
+
+### 1. Database & Schema
+- Added `transport_modes` table to manage dynamic fare configuration per mode (`flight`, `bus`, `auto`).
+- Removed hardcoded per-city fares in favor of a universal `base_fare + (distance * rate)` model.
+- Appended seed script and `scratch/migration_transport.sql` for smooth DB transitions.
+
+### 2. Backend Services
+- **`distanceService.ts`**: Built a lightweight wrapper to resolve coordinates via OSRM (Open Source Routing Machine) for roads, and Haversine for flights. Caches the responses using an in-memory LRU cache to minimize external HTTP overhead.
+- **`transportSearchService.ts`**: The core aggregator. Fetches mode configuration, calculates distances, and dynamically injects calculated fares and comfort scores into the final options array.
+- **Providers Architecture**: Converted the specialized `FlightProvider` into a robust `TransportProvider` interface. Created `FlightTransportProvider`, `BusTransportProvider`, and `AutoTransportProvider` to supply schedules while the engine calculates their fares dynamically based on exact distance.
+
+### 3. API & Routes
+- Created unified `POST /api/transport/search` validated by a rigorous Zod schema (`transportValidator.ts`).
+- Updated `app.ts` to seamlessly mount the unified search route.
+
+### 4. Frontend Revamp (`TransportSearch.tsx`)
+- Completely transformed `src/pages/Flights.tsx` into a powerful, multimodal Unified Transport Search page.
+- Integrated `src/utils/geocode.ts` utilizing Nominatim (OSM) to resolve city names into coordinates dynamically on the client, avoiding Google API costs.
+- Designed a sleek results UI clearly segregating mode icons (plane, bus, car), direct ETA routing, dynamic fares, and comfort ratings, with simple sorting toggles for Price vs Comfort.
+- Ensured full integration with the existing generic booking/payment hand-off.
+- Passed full static verification (`npm run build` & `npm run lint`).
+
+## [Phase 9] 2026-09-19 - Payment History & Receipts (Implementation Chunk)
+
+### 1. Database & Schema
+- Added `payments` table to unified tracking of all payment events across all booking types (`hotel`, `flight`, `bus`, `auto`, `tour`).
+- Configured relationships to `users` and tracked status transitions (`created`, `paid`, `failed`, `refunded`).
+- Created `scratch/migration_payments.sql` and appended to `schema.sql`.
+
+### 2. Backend Services
+- **`receiptService.ts`**: Implemented a robust PDF generator using `pdfkit` that aggregates payment, user, and booking details into an itemized, downloadable receipt.
+- **`paymentController.ts`**: 
+  - Overhauled `createRazorpayOrder` to instantly log the `created` status in the `payments` table.
+  - Updated webhook logic (`verifyRazorpaySignature` and `handleRazorpayWebhook`) to update the `payments` table with the `paid` status and Razorpay identifiers when transactions complete.
+  - Added new `getPayments` and `downloadReceipt` endpoints for the user-facing dashboard.
+- **`paymentRoutes.ts`**: Mounted the new `GET /api/payments` and `GET /api/payments/:id/receipt` endpoints securely under `authGuard`.
+- **`server/scripts/backfillPayments.ts`**: Script created to safely inject legacy bookings into the new `payments` table.
+
+### 3. Frontend Revamp (`Payments.tsx`)
+- Constructed a centralized `/dashboard/payments` route.
+- Interfaced directly with `src/api/payments.ts` using proper blobs to enable flawless `pdfkit` downloads directly from the backend stream.
+- Implemented status badges, dynamic table sorting/filtering, and unified transaction displays for a premium UX.
+- Integrated `Payments` into `App.tsx` and updated routes cleanly.
+
+### 4. Build & Lint Verification
+- Backend `npm run build` succeeded successfully.
+- Frontend `npm run build` executed successfully resolving all typing and pathing checks.
+
+## [Phase 10] 2026-09-19 - Past Experiences & Memories (Completed)
+
+### 1. Database Schema
+- Created scratch/migration_trips.sql to add 	rips and 	rip_photos tables.
+- Modified ookings, guide_bookings, light_bookings, us_bookings, and uto_bookings to include a nullable 	rip_id column pointing to 	rips.id.
+
+### 2. Backend Services
+- **	ripService.ts**: Handles fetching trips (aggregating details across all booking tables) and uploading photos to Supabase Storage.
+- **evisitService.ts**: Implements heuristic logic determining if a user should be prompted to visit a destination again, suggesting the best time.
+- **	ripController.ts**: Controllers linking the services to the API endpoints.
+- **pp.ts**: Registered /api/trips route.
+
+### 3. Frontend Trip UI
+- Created src/api/trips.ts for frontend API interactions.
+- Added TripSelector inside Checkout.tsx which allows selecting an existing trip or providing a name to create a new trip dynamically during payment initialization.
+- **PastExperiences.tsx**: A dashboard route rendering a beautiful grid view of all past trips and their core details.
+- **TripDetail.tsx**: A drill-down route rendering a consolidated feed of photos, itinerary bookings, related payments (with downloadable receipts), and the "Want to visit again?" section.
+
+### 4. Integration
+- Refactored paymentController.ts to seamlessly update the 	rip_id of a booking row just before dispatching to Razorpay, preventing any complex double-hop network calls from the frontend.
+
+### 5. Build & Lint Verification
+- Backend 
+pm run build succeeded successfully.
+- Frontend 
+pm run build succeeded successfully.
+
+### Phase 8 (Extended) — Smooth Multi-Leg & Whole-Trip Payments with Discounts (Completed)
+- Built payment_groups schema and APIs (/api/payments/order, /api/payments/verify, /api/payments/overview).
+- Implemented discountService.ts for dynamic server-side bundle pricing rule resolution (5% flat bundle discount seeded).
+- Built ScratchCard.tsx (canvas based) for revealing the discount on the frontend.
+- Updated Checkout.tsx to handle arrays of ookingIds, deferring to a robust PaymentSummary.tsx itemized flow.
+- Wired Razorpay flow to handle payment groups, distributing "paid" status downstream to standard payments and ookings.
+- Extended eceiptService.ts to output combined PDF receipts with subtotal/discount/fee breakdowns, exposed via /api/payments/groups/:id/receipt.
+
+### Phase 11 — Database Hardening (Consolidation, Integrity, Performance)
+
+#### Chunk DB-1 — Schema Audit & Single Source of Truth
+- Audited all existing tables and migrations.
+- Confirmed that the MongoDB vs PostgreSQL split mentioned in legacy docs is an outdated artifact; the codebase strictly uses Supabase (PostgreSQL) for all tables, relying on jsonb for document-shaped data (e.g., itineraries).
+- Created docs/SCHEMA_MAP.md as the authoritative single source of truth for the entire database structure, mapping all existing tables, foreign keys, and logical relationships.
+
+#### Chunk DB-2 — Constraints, Foreign Keys & Enums
+- Added strict ON DELETE constraints across the schema (e.g. ON DELETE CASCADE for trip_photos, ON DELETE SET NULL for bookings referencing trips).
+- Created native Postgres ENUMs (payment_status_enum, payment_group_status_enum, payment_group_type_enum, payment_item_type_enum, discount_rule_type_enum, discount_applies_to_enum) replacing previous loose text checks, preventing runtime spelling errors (like 'payed' vs 'paid').
+- Added money invariant CHECK constraints on payments, payment_groups (total >= 0, total >= subtotal - discount), and payment_group_items.
+- Added strict NOT NULL constraints to payments.amount, payment_groups.total, etc.
+- Added temporal invariants checking end_date >= start_date on trips and auto_bookings.
+- Wrote safe, re-runnable data sanitization DO  blocks that backfill/cleanse data *before* applying the strict constraints. Migration file is  05_db_hardening.sql. (Polymorphic booking IDs were intentionally kept logical/unconstrained as PostgreSQL does not support polymorphic foreign keys directly).
+
+#### Chunk DB-3 — Indexing Strategy
+- Audited queries in paymentGroupService, 	ripService, and paymentController.
+- Created migration  06_indexes.sql to add specific performance indexes exactly aligned with current dashboard and overview query patterns:
+  - idx_payments_user_status on payments (user_id, status) for dashboard list filtering.
+  - idx_payments_booking_id on payments (booking_id) for quick receipt lookups.
+  - idx_payment_groups_user_created on payment_groups (user_id, created_at DESC) for ordered payment history.
+  - idx_payment_group_items_group_id on payment_group_items (payment_group_id) for rapid receipt assembly.
+  - idx_trips_user_start_date on 	rips (user_id, start_date DESC) to back the Past Experiences grid.
+  - idx_trip_photos_trip_id on 	rip_photos (trip_id).
+  - Confirmed existing presence of index idx_bookings_trip_id (and its variants for flights, buses, etc.) for trip aggregation.
+- Carefully avoided over-indexing to maintain write performance.
+
+
+## [Phase 11: Chunk DB-4 & DB-5] 2026-09-19 - Transactions & Reconciliation Script
+
+### 1. Soft Deletion (DB-4)
+- Appended  07_soft_deletes.sql to add deleted_at TIMESTAMPTZ to all 5 booking tables.
+- Configured strict RLS policies to unconditionally hide deleted bookings from the frontend.
+
+### 2. Transactions via RPC (DB-4)
+- Since the backend relies solely on the Supabase REST client, we implemented complex multi-table atomic operations natively in PostgreSQL using PL/pgSQL.
+- Appended  08_transactions.sql which defines create_payment_group_txn and erify_payment_txn.
+- Refactored paymentGroupService.ts and paymentController.ts to call these RPCs instead of sequential API requests.
+
+### 3. Backfill Transactionality (DB-4)
+- Appended  09_backfill_txn.sql with ackfill_payments_txn(jsonb) to perform array-based batched insertion.
+- Updated server/scripts/backfillPayments.ts to accumulate payment arrays and send them into the RPC transaction, ensuring no partial states persist if the script crashes.
+
+### 4. Reconciliation Script (DB-5)
+- Created server/scripts/reconcile.ts to execute four major integrity checks: payment group totals, missing payments for groups, missing payments for confirmed bookings, and orphan associations.
+- Tested script structure execution.
+
+
+
+## [Phase 12: Chunk 12a] 2026-09-19 - Webhook Schema Alignment
+
+### 1. Schema Alignment
+- Verified the existing \payments\ and \payment_groups\ schema structure.
+- Appended \ 10_webhook_schema.sql\ to add \ailure_reason\, \eceipt_url\, and \updated_at\ columns to both tables.
+- Renamed \provider_order_id\ and \provider_payment_id\ to \azorpay_order_id\ and \azorpay_payment_id\ in the \payments\ table to align explicitly with the webhook flow.
+- Redefined \erify_payment_txn\ and \ackfill_payments_txn\ RPCs to account for the renamed columns.
+
+### 2. Idempotency & Triggers
+- Added a \UNIQUE\ constraint on \payment_groups.razorpay_order_id\ to guarantee safe idempotent webhook processing at the checkout level.
+- Created a PostgreSQL trigger (\update_updated_at_column\) and attached it to both tables to automatically bump the timestamp upon status changes.
+
+
+
+## [Phase 12: Chunks 12b & 12c] 2026-09-19 - Webhook-Driven Confirmation
+
+### Chunk 12b: Order Creation (Review)
+- Verified that \/api/payments/order\ successfully generates the order through Phase 8's \createPaymentGroup\ logic and returns the \azorpayOrderId\ to the frontend.
+- Adjusted \erifyRazorpaySignature\ endpoint to NO LONGER confirm bookings locally; it simply verifies the signature and awaits the webhook.
+
+### Chunk 12c: Webhook Endpoint
+- Implemented \POST /api/payments/webhook\ using \express.raw\ at the top of \pp.ts\ to preserve the raw Buffer required for signature verification.
+- Added \erifyWebhookSignature\ in \azorpayService.ts\ to perform HMAC-SHA256 validation against the \RAZORPAY_WEBHOOK_SECRET\.
+- Added full event handling for \payment.captured\ and \payment.failed\:
+  - Idempotency checks to ensure retries do not trigger duplicate notifications or errors.
+  - Database updates routed through the transactionally safe \erify_payment_txn\ RPC.
+  - In-app \createNotification\ logic successfully relocated to the webhook handler.
+
+
+
+## [Phase 12: Chunks 12d, 12e & 12f] 2026-09-19 - SMS Notifications & Verification UX
+
+### Chunk 12d: SMS Notification Service
+- Installed \	wilio\ SDK.
+- Created \smsService.ts\ isolating Twilio API interactions safely behind \	ry/catch\ blocks to prevent SMS failures from cascading.
+
+### Chunk 12e: Wire Webhook to SMS
+- Added migration \ 11_notifications_log.sql\ to create \
+otifications_log\ table for tracking SMS sent/failed events.
+- Added a \phone\ column to the \users\ table via migration.
+- Integrated \smsService\ directly into the \payment.captured\ and \payment.failed\ branches of the webhook handler in \paymentController.ts\. SMS send happens strictly asynchronously after DB transaction commits.
+
+### Chunk 12f: Frontend /verify UX
+- Added \GET /api/payments/:id\ mapped to \getPaymentStatus\ in the controller, allowing the frontend to quickly poll for authoritative status without relying on local callbacks.
+
+
+
+## [Phase 12: Chunk 12a] 2026-09-20 - Help Center Schema
+- Added migration \ 12_help_center.sql\ to schema, containing \help_categories\, \help_articles\, and \support_tickets\ tables.
+- Configured RLS to ensure public can read published articles and submit support tickets, but only admins can mutate content.
+- Seeded initial category slugs: \aq\, \ooking-rules\, \cancellation-policy\, \efund-policy\, \payment-policy\, \	erms-and-conditions\, \privacy-policy\.
+
+
+### Chunk 12b: Admin CRUD for Help Content
+- Created \server/src/validators/helpValidators.ts\ with \rticleSchema\ to enforce content requirements.
+- Created \server/src/controllers/admin/helpAdminController.ts\ for full CRUD and ordering logic.
+- Created \server/src/routes/admin/help.ts\ and mounted it in \pp.ts\ under \/api/admin/help\ gated by the \dminGuard\ middleware.
+- Created \src/components/admin/HelpManager.tsx\ as the frontend UI for editing articles via a Markdown-enabled interface, and added it as a tab in \AdminDashboard.tsx\.
+
+
+### Chunk 12c: Public /help Pages
+- Installed \eact-markdown\ to render secure markdown without raw HTML interpretation.
+- Created \server/src/routes/helpRoutes.ts\ to serve categories, articles, and execute basic \ILIKE\ search, mounted at \/api/help\. Also included \POST /api/help/contact\ to insert to \support_tickets\.
+- Built \src/pages/Help.tsx\ providing a sidebar category view, search box, and dynamic rendering via \FaqAccordion.tsx\ (for Q&A types) and \PolicyPage.tsx\ (for markdown sections).
+- Built \src/pages/Contact.tsx\ mapping to the support tickets API.
+- Updated \src/App.tsx\ with lazy-loaded routes for \/help\ and \/contact\.
+
+
+### Chunk 12d: Seed Content
+- Created \server/scripts/seedHelpContent.ts\ script.
+- Seeded initial FAQ and policies aligning completely with Phase 8/12 functionality (tiered cancellations, refund routing, Razorpay payment flows).
+- Verified correct insertion of articles mapping to their parent \help_categories\ slugs.

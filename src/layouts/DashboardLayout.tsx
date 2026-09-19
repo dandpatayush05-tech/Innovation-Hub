@@ -33,6 +33,7 @@ export const DashboardLayout = () => {
     { name: 'Upcoming Bookings', icon: Calendar, path: '/dashboard/bookings' },
     { name: 'Upcoming Experiences', icon: Ticket, path: '/dashboard/upcoming-experiences' },
     { name: 'Payments & Transactions', icon: CreditCard, path: '/dashboard/payments' },
+    { name: 'Past Experiences', icon: Compass, path: '/dashboard/trips' },
     { name: 'Profile & Settings', icon: Settings, path: '/dashboard/settings' },
     { name: 'Help & Support', icon: HelpCircle, path: '/dashboard/support' },
   ];
@@ -53,7 +54,7 @@ export const DashboardLayout = () => {
         <div className="p-6">
           <Link to="/" className="flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity">
             <Plane className="w-8 h-8 text-[#C84B31]" />
-            <span className="text-2xl font-serif tracking-tight">Vstara</span>
+            <span className="text-2xl font-serif tracking-tight">Yatra Setu</span>
           </Link>
         </div>
         

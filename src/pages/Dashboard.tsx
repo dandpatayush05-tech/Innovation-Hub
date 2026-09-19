@@ -238,7 +238,7 @@ export const Dashboard = () => {
                   </span>
                   <h3 className="font-medium text-[#2A2A2A] leading-tight mb-1">{booking.hotel?.name}</h3>
                   <p className="text-xs text-[#2A2A2A]/60">
-                    {new Date(booking.check_in_date).toLocaleDateString()} &mdash; {new Date(booking.check_out_date).toLocaleDateString()}
+                    {new Date(booking.check_in_date || (booking as any).check_in).toLocaleDateString()} &mdash; {new Date(booking.check_out_date || (booking as any).check_out).toLocaleDateString()}
                   </p>
                 </div>
               </div>

@@ -117,7 +117,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
       }
 
       // Step 1: Create Razorpay Order
-      const order = await createRazorpayOrder({ booking_id: bookingId, booking_type: type });
+      const order = await createRazorpayOrder({ bookingIds: [bookingId] });
       
       // Step 2: Initialize Razorpay Checkout
       const options = {
@@ -126,12 +126,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
         currency: order.currency as any,
         name: "Innovation Hub",
         description: `Booking for ${itemName}`,
-        order_id: order.orderId,
+        order_id: order.razorpayOrderId,
         handler: async (response: any) => {
           try {
             setLoading(true);
             // Verify payment signature
             await verifyRazorpayPayment({
+              paymentGroupId: order.paymentGroupId,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature

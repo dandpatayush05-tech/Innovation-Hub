@@ -33,6 +33,11 @@ const ExperienceDetails = React.lazy(() => import('./pages/ExperienceDetails').t
 const Bookings = React.lazy(() => import('./pages/Bookings').then(m => ({ default: m.Bookings })));
 const UpcomingExperiences = React.lazy(() => import('./pages/UpcomingExperiences').then(m => ({ default: m.UpcomingExperiences })));
 const Unauthorized = React.lazy(() => import('./pages/Unauthorized').then(m => ({ default: m.Unauthorized })));
+const Payments = React.lazy(() => import('./pages/Payments'));
+const PastExperiences = React.lazy(() => import('./pages/PastExperiences'));
+const TripDetail = React.lazy(() => import('./pages/TripDetail'));
+const Help = React.lazy(() => import('./pages/Help'));
+const Contact = React.lazy(() => import('./pages/Contact'));
 
 const SuspenseFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
@@ -58,6 +63,8 @@ function App() {
             <Route path="/explore/:country" element={<ExploreCountry />} />
             <Route path="/itineraries/generate" element={<ItineraryGenerator />} />
             <Route path="/itineraries/:id" element={<ItineraryDetail />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/contact" element={<Contact />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -72,6 +79,9 @@ function App() {
                 <Route path="/dashboard/auto" element={<AutoTransport />} />
                 <Route path="/dashboard/bookings" element={<Bookings />} />
                 <Route path="/dashboard/upcoming-experiences" element={<UpcomingExperiences />} />
+                <Route path="/dashboard/payments" element={<Payments />} />
+                <Route path="/dashboard/trips" element={<PastExperiences />} />
+                <Route path="/dashboard/trips/:id" element={<TripDetail />} />
               </Route>
             </Route>
 

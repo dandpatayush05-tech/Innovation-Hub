@@ -52,7 +52,7 @@ export const Destinations = () => {
         <div className="max-w-[1360px] mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity no-underline">
             <MapPin className="w-8 h-8 text-[#C84B31]" />
-            <span className="font-display text-[28px] text-black leading-none select-none mt-1">Vstara</span>
+            <span className="font-display text-[28px] text-black leading-none select-none mt-1">Yatra Setu</span>
           </Link>
           <div className="flex gap-6">
             <Link to="/dashboard" className="text-[15px] font-semibold uppercase text-[#292929] tracking-[0.04em] hover:opacity-55 transition-opacity">
