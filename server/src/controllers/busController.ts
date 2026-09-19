@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import { ApiError, UnauthorizedError, NotFoundError, ConflictError } from '../utils/ApiError';
+import { listBuses } from '../services/busService';
 
 export const getBuses = async (req: Request, res: Response) => {
   try {
@@ -8,47 +10,27 @@ export const getBuses = async (req: Request, res: Response) => {
       destination,
       minPrice, 
       maxPrice,
-      sort = 'created_at',
-      order = 'desc',
-      limit = 20,
-      page = 1
+      sort,
+      order,
+      limit,
+      page
     } = req.query;
 
-    let query = supabase.from('buses').select('*', { count: 'exact' });
-    
-    if (source) {
-      query = query.ilike('route_source', `%${source}%`);
-    }
-    if (destination) {
-      query = query.ilike('route_destination', `%${destination}%`);
-    }
-
-    if (minPrice) query = query.gte('price', minPrice);
-    if (maxPrice) query = query.lte('price', maxPrice);
-
-    const from = (Number(page) - 1) * Number(limit);
-    const to = from + Number(limit) - 1;
-    
-    query = query
-      .order(sort as string, { ascending: order === 'asc' })
-      .range(from, to);
-
-    const { data, count, error } = await query;
-
-    if (error) throw error;
-
-    res.json({
-      data,
-      pagination: {
-        total: count,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil((count || 0) / Number(limit))
-      }
+    const result = await listBuses({
+      source: source as string,
+      destination: destination as string,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      sort: sort as string,
+      order: order as string,
+      limit: limit ? Number(limit) : undefined,
+      page: page ? Number(page) : undefined
     });
+
+    res.json(result);
   } catch (_error) {
     console.error(_error);
-    res.status(500).json({ error: 'Failed to fetch buses' });
+    throw new ApiError(500, 'Failed to fetch buses', 'INTERNAL_ERROR', undefined);
   }
 };
 
@@ -62,7 +44,7 @@ export const getBus = async (req: Request, res: Response) => {
       .single();
 
     if (busError) throw busError;
-    if (!bus) return res.status(404).json({ error: 'Bus not found' });
+    if (!bus) throw new NotFoundError('Bus not found', undefined);
 
     // Find booked seats
     const { data: bookings, error: bookingsError } = await supabase
@@ -73,7 +55,7 @@ export const getBus = async (req: Request, res: Response) => {
 
     if (bookingsError) throw bookingsError;
 
-    let bookedSeats: string[] = [];
+    const bookedSeats: string[] = [];
     if (bookings) {
       bookings.forEach(b => {
         if (Array.isArray(b.passenger_details)) {
@@ -89,7 +71,7 @@ export const getBus = async (req: Request, res: Response) => {
     res.json({ data: { ...bus, bookedSeats } });
   } catch (_error) {
     console.error(_error);
-    res.status(500).json({ error: 'Failed to fetch bus' });
+    throw new ApiError(500, 'Failed to fetch bus', 'INTERNAL_ERROR', undefined);
   }
 };
 
@@ -97,7 +79,7 @@ export const createBusBooking = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      throw new UnauthorizedError('Unauthorized', undefined);
     }
 
     const { bus_id, seats, passenger_details } = req.body;
@@ -110,7 +92,7 @@ export const createBusBooking = async (req: Request, res: Response) => {
       .single();
 
     if (busError || !bus) {
-      return res.status(404).json({ error: 'Bus not found' });
+      throw new NotFoundError('Bus not found', undefined);
     }
 
     // Check for seat conflicts
@@ -136,7 +118,7 @@ export const createBusBooking = async (req: Request, res: Response) => {
 
       const conflict = requestedSeats.some((s: string) => bookedSeats.has(s));
       if (conflict) {
-        return res.status(409).json({ error: 'One or more selected seats are already booked.' });
+        throw new ConflictError('One or more selected seats are already booked.', undefined);
       }
     }
 
@@ -161,6 +143,6 @@ export const createBusBooking = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Create bus booking error:', error);
-    res.status(500).json({ error: 'Failed to create bus booking' });
+    throw new ApiError(500, 'Failed to create bus booking', 'INTERNAL_ERROR', undefined);
   }
 };

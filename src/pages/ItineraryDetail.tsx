@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getItinerary, updateItinerary, deleteItinerary, duplicateItinerary } from '../api/itineraries';
 import type { Itinerary, ItineraryDay, ItineraryActivity } from '../api/itineraries';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { 
   Sparkles, DollarSign, Clock, ChevronDown, ChevronUp, Loader2, Lock, ArrowLeft,
   Edit2, Save, Trash2, Plus, Copy, Share2, CheckCircle2
@@ -13,6 +15,7 @@ export const ItineraryDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
   
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +25,7 @@ export const ItineraryDetail = () => {
   
   const [editMode, setEditMode] = useState(false);
   const [openDay, setOpenDay] = useState<number | null>(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,33 +66,42 @@ export const ItineraryDetail = () => {
         days: itinerary.days
       });
       setEditMode(false);
+      toastSuccess('Itinerary saved successfully!');
     } catch (_err) {
       console.error(_err);
-      alert('Failed to save itinerary');
+      toastError('Failed to save itinerary');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!itinerary || !window.confirm('Are you sure you want to delete this itinerary?')) return;
+  const executeDelete = async () => {
+    if (!itinerary) return;
     try {
       await deleteItinerary(itinerary.id);
+      toastSuccess('Itinerary deleted');
       navigate('/dashboard/itineraries');
     } catch (_err) {
       console.error(_err);
-      alert('Failed to delete itinerary');
+      toastError('Failed to delete itinerary');
+    } finally {
+      setShowDeleteConfirm(false);
     }
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
   };
 
   const handleDuplicate = async () => {
     if (!itinerary) return;
     try {
       const res = await duplicateItinerary(itinerary.id);
+      toastSuccess('Itinerary duplicated');
       navigate(`/dashboard/itineraries/${res.itinerary.id}`);
     } catch (_err) {
       console.error(_err);
-      alert('Failed to duplicate itinerary');
+      toastError('Failed to duplicate itinerary');
     }
   };
 
@@ -377,6 +390,15 @@ export const ItineraryDetail = () => {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={executeDelete}
+        title="Delete Itinerary"
+        description="Are you sure you want to delete this itinerary? This action cannot be undone."
+        confirmText="Delete Itinerary"
+      />
     </div>
   );
 };

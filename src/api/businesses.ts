@@ -1,27 +1,6 @@
-import api from './axios';
-
-export interface Business {
-  id: string;
-  user_id: string;
-  business_name: string;
-  business_type: 'hotel' | 'agency' | 'guide';
-  description?: string;
-  location?: string;
-  contact_email: string;
-  verified: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BusinessesResponse {
-  data: Business[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+import api from '../lib/axios';
+import { Business, BusinessesResponse } from '../types/business';
+export * from '../types/business';
 
 export interface GetBusinessesParams {
   page?: number;

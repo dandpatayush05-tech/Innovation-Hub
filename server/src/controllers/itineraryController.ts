@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { generateItineraryWithLLM } from '../services/llm';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
+import { ApiError, ForbiddenError, NotFoundError } from '../utils/ApiError';
+
 
 export const generateItinerary = async (req: AuthRequest, res: Response) => {
   const { prompt } = req.body;
@@ -29,7 +31,7 @@ export const generateItinerary = async (req: AuthRequest, res: Response) => {
     res.status(201).json({ message: 'Itinerary generated successfully', itinerary });
   } catch (error) {
     console.error('Itinerary generation error:', error);
-    res.status(502).json({ error: { message: "Couldn't generate your trip — try again" } });
+    throw new ApiError(502, "Couldn't generate your trip — try again", 'INTERNAL_ERROR', undefined);
   }
 };
 
@@ -44,7 +46,7 @@ export const createItinerary = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !itinerary) {
-    return res.status(500).json({ error: { message: 'Failed to create itinerary' } });
+    throw new ApiError(500, 'Failed to create itinerary', 'INTERNAL_ERROR', undefined);
   }
 
   res.status(201).json({ itinerary });
@@ -54,12 +56,12 @@ export const getItinerary = async (req: AuthRequest, res: Response) => {
   const { data: itinerary } = await supabase.from('itineraries').select('*').eq('id', req.params.id).single();
   
   if (!itinerary) {
-    return res.status(404).json({ error: { message: 'Itinerary not found' } });
+    throw new NotFoundError('Itinerary not found', undefined);
   }
 
   // If it's owned by a user, only that user or an admin can view it, unless it's public
   if (itinerary.user_id && req.user?.id !== itinerary.user_id && req.user?.role !== 'admin' && !itinerary.is_public) {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+    throw new ForbiddenError('Forbidden', undefined);
   }
 
   res.json({ itinerary });
@@ -67,7 +69,7 @@ export const getItinerary = async (req: AuthRequest, res: Response) => {
 
 export const getUserItineraries = async (req: AuthRequest, res: Response) => {
   if (req.user?.id !== req.params.userId && req.user?.role !== 'admin') {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+    throw new ForbiddenError('Forbidden', undefined);
   }
 
   const { data: itineraries } = await supabase
@@ -83,11 +85,11 @@ export const updateItinerary = async (req: AuthRequest, res: Response) => {
   const { data: existing } = await supabase.from('itineraries').select('user_id').eq('id', req.params.id).single();
   
   if (!existing) {
-    return res.status(404).json({ error: { message: 'Itinerary not found' } });
+    throw new NotFoundError('Itinerary not found', undefined);
   }
 
   if (existing.user_id !== req.user?.id && req.user?.role !== 'admin') {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+    throw new ForbiddenError('Forbidden', undefined);
   }
 
   const { data: itinerary, error } = await supabase
@@ -98,7 +100,7 @@ export const updateItinerary = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !itinerary) {
-    return res.status(500).json({ error: { message: 'Failed to update itinerary' } });
+    throw new ApiError(500, 'Failed to update itinerary', 'INTERNAL_ERROR', undefined);
   }
 
   res.json({ itinerary });
@@ -108,11 +110,11 @@ export const deleteItinerary = async (req: AuthRequest, res: Response) => {
   const { data: existing } = await supabase.from('itineraries').select('user_id').eq('id', req.params.id).single();
   
   if (!existing) {
-    return res.status(404).json({ error: { message: 'Itinerary not found' } });
+    throw new NotFoundError('Itinerary not found', undefined);
   }
 
   if (existing.user_id !== req.user?.id && req.user?.role !== 'admin') {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+    throw new ForbiddenError('Forbidden', undefined);
   }
 
   await supabase.from('itineraries').delete().eq('id', req.params.id);
@@ -124,7 +126,7 @@ export const duplicateItinerary = async (req: AuthRequest, res: Response) => {
   const { data: existing } = await supabase.from('itineraries').select('*').eq('id', req.params.id).single();
   
   if (!existing) {
-    return res.status(404).json({ error: { message: 'Itinerary not found' } });
+    throw new NotFoundError('Itinerary not found', undefined);
   }
 
   // To duplicate, we strip out the id, created_at, updated_at, set user_id to current user, and clean up booking_ids
@@ -158,7 +160,7 @@ export const duplicateItinerary = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !duplicate) {
-    return res.status(500).json({ error: { message: 'Failed to duplicate itinerary' } });
+    throw new ApiError(500, 'Failed to duplicate itinerary', 'INTERNAL_ERROR', undefined);
   }
 
   res.status(201).json({ itinerary: duplicate });

@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
-import { AuthRequest, isOwnerOrAdmin } from '../middleware/authGuard';
+import { AuthRequest } from '../middleware/authGuard';
+import { isOwnerOrAdmin } from '../middleware/requireRole';
+import { ApiError, ForbiddenError, NotFoundError } from '../utils/ApiError';
+
 
 export const registerBusiness = async (req: AuthRequest, res: Response) => {
   const { data: business, error } = await supabase
@@ -17,7 +20,7 @@ export const registerBusiness = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !business) {
-    return res.status(500).json({ error: { message: 'Failed to register business', details: error?.message } });
+    throw new ApiError(500, 'Failed to register business', 'INTERNAL_ERROR', error?.message);
   }
 
   res.status(201).json({ message: 'Business registered successfully', data: business });
@@ -68,7 +71,7 @@ export const getBusinesses = async (req: Request, res: Response) => {
   const { data: businesses, count, error } = await query;
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch businesses', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch businesses', 'INTERNAL_ERROR', error.message);
   }
 
   const total = count || 0;
@@ -88,7 +91,7 @@ export const getBusinesses = async (req: Request, res: Response) => {
 export const getBusiness = async (req: Request, res: Response) => {
   const { data: business, error } = await supabase.from('businesses').select('*').eq('id', req.params.id).single();
   
-  if (error || !business) return res.status(404).json({ error: { message: 'Business not found' } });
+  if (error || !business) throw new NotFoundError('Business not found', undefined);
   res.json({ data: business });
 };
 
@@ -101,11 +104,11 @@ export const updateBusiness = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (fetchError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Business not found' } });
+    throw new NotFoundError('Business not found', undefined);
   }
 
   if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this business' } });
+    throw new ForbiddenError('Forbidden: You do not own this business', undefined);
   }
 
   const updateData: Record<string, unknown> = {};
@@ -113,6 +116,8 @@ export const updateBusiness = async (req: AuthRequest, res: Response) => {
   if (req.body.businessType) updateData.business_type = req.body.businessType;
   if (req.body.description !== undefined) updateData.description = req.body.description;
   if (req.body.location !== undefined) updateData.location = req.body.location;
+  if (req.body.latitude !== undefined) updateData.latitude = req.body.latitude;
+  if (req.body.longitude !== undefined) updateData.longitude = req.body.longitude;
   if (req.body.contactEmail) updateData.contact_email = req.body.contactEmail;
   if (req.user?.role === 'admin' && req.body.verified !== undefined) {
       updateData.verified = req.body.verified;
@@ -126,7 +131,7 @@ export const updateBusiness = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !business) {
-    return res.status(500).json({ error: { message: 'Failed to update business', details: error?.message } });
+    throw new ApiError(500, 'Failed to update business', 'INTERNAL_ERROR', error?.message);
   }
 
   res.json({ data: business });
@@ -141,11 +146,11 @@ export const deleteBusiness = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (fetchError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Business not found' } });
+    throw new NotFoundError('Business not found', undefined);
   }
 
   if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this business' } });
+    throw new ForbiddenError('Forbidden: You do not own this business', undefined);
   }
 
   const { error } = await supabase
@@ -154,7 +159,7 @@ export const deleteBusiness = async (req: AuthRequest, res: Response) => {
     .eq('id', req.params.id);
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to delete business', details: error.message } });
+    throw new ApiError(500, 'Failed to delete business', 'INTERNAL_ERROR', error.message);
   }
 
   res.status(204).send();

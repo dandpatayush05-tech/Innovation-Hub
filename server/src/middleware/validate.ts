@@ -12,3 +12,14 @@ export const validate = (schema: ZodSchema) => {
   };
 };
 
+export const validateQuery = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse(req.query);
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+

@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
+import { ApiError, BadRequestError, ForbiddenError, NotFoundError } from '../utils/ApiError';
+
 
 export const getConversations = async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
@@ -27,7 +29,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
   const { data: conversations, error } = await query.order('updated_at', { ascending: false });
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch conversations', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch conversations', 'INTERNAL_ERROR', error.message);
   }
 
   res.json({ data: conversations });
@@ -44,14 +46,14 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (convError || !conversation) {
-    return res.status(404).json({ error: { message: 'Conversation not found' } });
+    throw new NotFoundError('Conversation not found', undefined);
   }
 
   const isTraveler = req.user!.id === conversation.traveler_id;
   const isBusinessOwner = req.user!.id === (conversation.businesses as any).user_id;
 
   if (!isTraveler && !isBusinessOwner && req.user!.role !== 'admin') {
-    return res.status(403).json({ error: { message: 'Forbidden' } });
+    throw new ForbiddenError('Forbidden', undefined);
   }
 
   // Pagination
@@ -67,7 +69,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch messages', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch messages', 'INTERNAL_ERROR', error.message);
   }
 
   const total = count || 0;
@@ -90,7 +92,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
   // If conversationId is 'new', we need to find or create the conversation
   if (conversationId === 'new') {
     if (!business_id) {
-      return res.status(400).json({ error: { message: 'business_id is required to start a new conversation' } });
+      throw new BadRequestError('business_id is required to start a new conversation', undefined);
     }
     
     // Check if conversation already exists
@@ -112,7 +114,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         .single();
         
       if (createConvError || !newConv) {
-        return res.status(500).json({ error: { message: 'Failed to create conversation', details: createConvError?.message } });
+        throw new ApiError(500, 'Failed to create conversation', 'INTERNAL_ERROR', createConvError?.message);
       }
       conversationId = newConv.id;
     }
@@ -125,14 +127,14 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (convError || !conversation) {
-      return res.status(404).json({ error: { message: 'Conversation not found' } });
+      throw new NotFoundError('Conversation not found', undefined);
     }
 
     const isTraveler = senderId === conversation.traveler_id;
     const isBusinessOwner = senderId === (conversation.businesses as any).user_id;
 
     if (!isTraveler && !isBusinessOwner && req.user!.role !== 'admin') {
-      return res.status(403).json({ error: { message: 'Forbidden' } });
+      throw new ForbiddenError('Forbidden', undefined);
     }
   }
 
@@ -148,7 +150,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !message) {
-    return res.status(500).json({ error: { message: 'Failed to send message', details: error?.message } });
+    throw new ApiError(500, 'Failed to send message', 'INTERNAL_ERROR', error?.message);
   }
 
   // Update conversation updated_at

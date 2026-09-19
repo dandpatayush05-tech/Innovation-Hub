@@ -1,4 +1,4 @@
-import api from './axios';
+import api from '../lib/axios';
 
 export type ActivityType = 'hotel' | 'flight' | 'bus' | 'auto' | 'attraction' | 'experience' | 'restaurant' | 'note';
 

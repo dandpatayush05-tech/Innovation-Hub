@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { X, Loader2, Calendar, Star, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { createBooking, createGuideBooking } from '../api/bookings';
 import { createReview } from '../api/reviews';
 import { createRazorpayOrder, verifyRazorpayPayment } from '../api/payment';
 import { useRazorpay } from 'react-razorpay';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createBookingSchema, createGuideBookingSchema } from '../lib/validations';
+import { FieldError } from '../components/FieldError';
 import { OCCASION_THEMES, type OccasionType } from '../config/occasionThemes';
 
 export type BookingType = 'hotel' | 'tour';
@@ -20,17 +25,12 @@ export interface BookingModalProps {
 
 export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, type, itemId, itemName, price }) => {
   const { user } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
   const { Razorpay } = useRazorpay();
   
-  const [checkInDate, setCheckInDate] = useState('');
-  const [checkOutDate, setCheckOutDate] = useState('');
-  const [bookingDate, setBookingDate] = useState('');
-  const [guests, setGuests] = useState(1);
-  const [rooms, setRooms] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [occasion, setOccasion] = useState<OccasionType>('vacation');
   const [showSurprise, setShowSurprise] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showBill, setShowBill] = useState(false);
@@ -39,6 +39,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
   const [reviewLoading, setReviewLoading] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<any>({
+    resolver: zodResolver((type === 'hotel' ? createBookingSchema : createGuideBookingSchema) as any),
+    defaultValues: {
+      check_in_date: '',
+      check_out_date: '',
+      booking_date: '',
+      guests: 1,
+      rooms: 1,
+      participants: 1,
+      occasion: 'vacation' as OccasionType,
+    } as any
+  });
+
+  const checkInDate = useWatch({ control, name: 'check_in_date' });
+  const checkOutDate = useWatch({ control, name: 'check_out_date' });
+  const bookingDate = useWatch({ control, name: 'booking_date' });
+  const guests = useWatch({ control, name: 'guests' });
+  const rooms = useWatch({ control, name: 'rooms' });
+  const participants = useWatch({ control, name: 'participants' });
+  const occasion = useWatch({ control, name: 'occasion' });
 
   if (!isOpen) return null;
 
@@ -53,11 +80,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
   };
 
   const totalPrice = type === 'hotel' 
-    ? price * getDays() * rooms
-    : price * guests;
+    ? price * getDays() * (rooms || 1)
+    : price * (participants || 1);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: any) => {
     if (!user) {
       setError('You must be logged in to book.');
       return;
@@ -67,31 +93,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
     setLoading(true);
 
     try {
-      if (type === 'hotel') {
-        if (!checkInDate || !checkOutDate) throw new Error('Please select dates');
-      } else {
-        if (!bookingDate) throw new Error('Please select a date');
-      }
-
       let bookingId = '';
       if (type === 'hotel') {
         const res = await createBooking({
           hotel_id: itemId,
-          check_in_date: checkInDate,
-          check_out_date: checkOutDate,
-          guests,
-          rooms,
+          check_in_date: data.check_in_date,
+          check_out_date: data.check_out_date,
+          guests: data.guests,
+          rooms: data.rooms,
           total_price: totalPrice,
-          occasion
+          occasion: data.occasion
         }) as any;
         bookingId = res.booking.id;
       } else {
         const res = await createGuideBooking({
           tour_id: itemId,
-          booking_date: bookingDate,
-          participants: guests,
+          booking_date: data.booking_date,
+          participants: data.participants,
           total_price: totalPrice,
-          occasion
+          occasion: data.occasion
         }) as any;
         bookingId = res.guideBooking.id;
       }
@@ -118,9 +138,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
             });
 
             setSuccess(true);
+            toastSuccess('Payment successful! Booking confirmed.');
           } catch (err: any) {
             console.error('Verification/Booking failed:', err);
-            setError(err.response?.data?.error?.message || err.message || 'Payment verified but failed to save booking.');
+            const msg = err.response?.data?.error?.message || err.message || 'Payment verified but failed to save booking.';
+            setError(msg);
+            toastError(msg);
           } finally {
             setLoading(false);
           }
@@ -142,12 +165,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
       const rzp1 = new Razorpay(options);
       
       rzp1.on("payment.failed", function (response: any) {
-        setError(response.error.description || 'Payment failed');
+        const msg = response.error.description || 'Payment failed';
+        setError(msg);
+        toastError(msg);
       });
 
       rzp1.open();
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.message || 'Failed to initiate payment. Please try again.');
+      const msg = err.response?.data?.error?.message || err.message || 'Failed to initiate payment. Please try again.';
+      setError(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }
@@ -164,11 +191,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
       });
       setShowReview(false);
       setShowBill(true);
+      toastSuccess('Review submitted successfully!');
     } catch (err: any) {
       console.error('Failed to submit review', err);
       // Even if review fails (e.g. duplicate), move to bill screen
       setShowReview(false);
       setShowBill(true);
+      toastError('Failed to submit review');
     } finally {
       setReviewLoading(false);
     }
@@ -277,7 +306,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
             </div>
           </div>
         ) : showSurprise ? (() => {
-          const theme = OCCASION_THEMES[occasion];
+          const theme = OCCASION_THEMES[occasion as OccasionType];
           const Icon = theme.icon;
           return (
             <div className={`p-8 text-center flex flex-col items-center ${theme.colors.bg} h-full min-h-[360px] justify-center animate-in fade-in zoom-in-95`}>
@@ -317,7 +346,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6">
             <h3 className="font-semibold text-lg mb-6 truncate">{itemName}</h3>
             
             {error && (
@@ -330,82 +359,76 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
               <div className="space-y-4 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="checkInDate" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-in</label>
+                    <label htmlFor="check_in_date" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-in</label>
                     <input 
-                      id="checkInDate"
+                      id="check_in_date"
                       type="date" 
-                      required
                       min={today}
-                      value={checkInDate}
-                      onChange={(e) => setCheckInDate(e.target.value)}
-                      className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                      {...register('check_in_date')}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.check_in_date ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                     />
+                    <FieldError error={errors.check_in_date?.message as string} />
                   </div>
                   <div>
-                    <label htmlFor="checkOutDate" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-out</label>
+                    <label htmlFor="check_out_date" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-out</label>
                     <input 
-                      id="checkOutDate"
+                      id="check_out_date"
                       type="date" 
-                      required
                       min={checkInDate || today}
-                      value={checkOutDate}
-                      onChange={(e) => setCheckOutDate(e.target.value)}
-                      className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                      {...register('check_out_date')}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.check_out_date ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                     />
+                    <FieldError error={errors.check_out_date?.message as string} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="hotelGuests" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Guests</label>
+                    <label htmlFor="guests" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Guests</label>
                     <input 
-                      id="hotelGuests"
+                      id="guests"
                       type="number" 
                       min="1"
-                      required
-                      value={guests}
-                      onChange={(e) => setGuests(parseInt(e.target.value))}
-                      className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                      {...register('guests', { valueAsNumber: true })}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.guests ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                     />
+                    <FieldError error={errors.guests?.message as string} />
                   </div>
                   <div>
-                    <label htmlFor="hotelRooms" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Rooms</label>
+                    <label htmlFor="rooms" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Rooms</label>
                     <input 
-                      id="hotelRooms"
+                      id="rooms"
                       type="number" 
                       min="1"
-                      required
-                      value={rooms}
-                      onChange={(e) => setRooms(parseInt(e.target.value))}
-                      className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                      {...register('rooms', { valueAsNumber: true })}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.rooms ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                     />
+                    <FieldError error={errors.rooms?.message as string} />
                   </div>
                 </div>
               </div>
             ) : (
               <div className="space-y-4 mb-6">
                 <div>
-                  <label htmlFor="tourDate" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Date</label>
+                  <label htmlFor="booking_date" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Date</label>
                   <input 
-                    id="tourDate"
+                    id="booking_date"
                     type="date" 
-                    required
                     min={today}
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                    {...register('booking_date')}
+                    className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.booking_date ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                   />
+                  <FieldError error={errors.booking_date?.message as string} />
                 </div>
                 <div>
-                  <label htmlFor="tourGuests" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Participants</label>
+                  <label htmlFor="participants" className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Participants</label>
                   <input 
-                    id="tourGuests"
+                    id="participants"
                     type="number" 
                     min="1"
-                    required
-                    value={guests}
-                    onChange={(e) => setGuests(parseInt(e.target.value))}
-                    className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31]"
+                    {...register('participants', { valueAsNumber: true })}
+                    className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#C84B31] ${errors.participants ? 'border-red-500 focus:ring-red-500' : 'border-black/10 focus:ring-[#C84B31]'}`}
                   />
+                  <FieldError error={errors.participants?.message as string} />
                 </div>
               </div>
             )}
@@ -418,7 +441,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setOccasion(key)}
+                    onClick={() => setValue('occasion', key)}
                     className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
                       occasion === key 
                         ? 'bg-black text-white border-black' 

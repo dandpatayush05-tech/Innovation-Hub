@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { generateItinerary } from '../api/itineraries';
 import type { Itinerary, ItineraryDay } from '../api/itineraries';
 import {
@@ -17,7 +17,9 @@ const SUGGESTIONS = [
 ];
 
 export const ItineraryGenerator = () => {
-  const [prompt, setPrompt] = useState('');
+  const [searchParams] = useSearchParams();
+  const initialDestination = searchParams.get('destination');
+  const [prompt, setPrompt] = useState(initialDestination ? `Plan a trip to ${initialDestination}` : '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);

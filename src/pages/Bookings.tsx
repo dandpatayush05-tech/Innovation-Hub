@@ -3,6 +3,8 @@ import { getUnifiedBookings, cancelBooking, UnifiedBooking } from '../api/bookin
 import { Loader2, Hotel, Plane, Bus, Car, Compass, FileText, Download, XCircle, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export const Bookings = () => {
   useAuth();
@@ -11,6 +13,8 @@ export const Bookings = () => {
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{id: string, type: UnifiedBooking['type']} | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const fetchBookings = async () => {
     try {
@@ -27,18 +31,25 @@ export const Bookings = () => {
     fetchBookings();
   }, []);
 
-  const handleCancel = async (id: string, type: UnifiedBooking['type']) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
+  const executeCancel = async () => {
+    if (!cancelTarget) return;
+    const { id, type } = cancelTarget;
     setActionLoading(id);
     try {
       await cancelBooking(id, type);
       await fetchBookings();
+      toastSuccess('Booking cancelled successfully');
     } catch (error) {
       console.error('Failed to cancel', error);
-      alert('Failed to cancel booking. Check console for details.');
+      toastError('Failed to cancel booking. Check console for details.');
     } finally {
       setActionLoading(null);
+      setCancelTarget(null);
     }
+  };
+
+  const handleCancelClick = (id: string, type: UnifiedBooking['type']) => {
+    setCancelTarget({ id, type });
   };
 
   const getIcon = (type: string) => {
@@ -178,7 +189,7 @@ export const Bookings = () => {
                 </button>
                 {['pending', 'confirmed', 'requested'].includes(booking.status) && (
                   <button 
-                    onClick={() => handleCancel(booking.id, booking.type)}
+                    onClick={() => handleCancelClick(booking.id, booking.type)}
                     disabled={actionLoading === booking.id}
                     className="flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-red-100"
                   >
@@ -192,6 +203,15 @@ export const Bookings = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={cancelTarget !== null}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={executeCancel}
+        title="Cancel Booking"
+        description="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmText="Cancel Booking"
+      />
     </div>
   );
 };

@@ -1,43 +1,29 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import * as destinationService from '../services/destinationService';
+import { getWeatherForDestination } from '../services/weather';
+import { getTransportToDestination } from '../services/transportService';
+import { ApiError, BadRequestError, NotFoundError } from '../utils/ApiError';
 
 export const getDestinations = async (req: Request, res: Response) => {
-  // Pagination
   const page = parseInt(req.query.page as string) || 1;
-  const limit = Math.min(parseInt(req.query.limit as string) || 10, 50); // safe max limit 50
-  const offset = (page - 1) * limit;
-
-  // Base query with count
-  let query = supabase.from('destinations').select('*', { count: 'exact' });
-
-  // Search by name or description
-  if (req.query.search) {
-    const searchParam = req.query.search as string;
-    query = query.or(`name.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
-  }
-
-  // Filter by country
-  if (req.query.country) {
-    query = query.eq('country', req.query.country as string);
-  }
-
-  // Filter by tags
-  if (req.query.tag) {
-    query = query.contains('tags', [req.query.tag as string]);
-  }
-
-  // Sorting
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+  
   const sort = (req.query.sort as string) || 'created_at';
-  const order = (req.query.order as string) === 'asc' ? true : false; // default desc
-  query = query.order(sort, { ascending: order });
+  const order = (req.query.order as string) === 'asc' ? true : false;
 
-  // Apply pagination
-  query = query.range(offset, offset + limit - 1);
-
-  const { data: destinations, count, error } = await query;
+  const { data: destinations, count, error } = await destinationService.listDestinations({
+    page,
+    limit,
+    search: req.query.search as string | undefined,
+    country: req.query.country as string | undefined,
+    tag: req.query.tag as string | undefined,
+    sort,
+    order,
+    popular: req.query.popular === 'true'
+  });
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch destinations', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch destinations', 'INTERNAL_ERROR', error.message);
   }
 
   const total = count || 0;
@@ -55,56 +41,103 @@ export const getDestinations = async (req: Request, res: Response) => {
 };
 
 export const getDestination = async (req: Request, res: Response) => {
-  const { data: destination, error } = await supabase
-    .from('destinations')
-    .select('*')
-    .eq('id', req.params.id)
-    .single();
+  const { data: destination, error } = await destinationService.getDestinationById(req.params.id as string);
   
   if (error || !destination) {
-    return res.status(404).json({ error: { message: 'Destination not found' } });
+    throw new NotFoundError('Destination not found', undefined);
   }
   
   res.json({ data: destination });
 };
 
+export const getDestinationDetail = async (req: Request, res: Response) => {
+  try {
+    const data = await destinationService.getDestinationDetail(req.params.id as string);
+    res.json({ data });
+  } catch (error: any) {
+    throw new NotFoundError(error.message || 'Destination not found', undefined);
+  }
+};
+
+export const getCountries = async (req: Request, res: Response) => {
+  try {
+    const countries = await destinationService.getCountries();
+    res.json({ data: countries });
+  } catch (error: any) {
+    throw new ApiError(500, error.message || 'Failed to fetch countries', 'INTERNAL_ERROR');
+  }
+};
+
+export const getDestinationWeather = async (req: Request, res: Response) => {
+  try {
+    const { data: destination, error } = await destinationService.getDestinationById(req.params.id as string);
+    if (error || !destination) {
+      throw new NotFoundError('Destination not found');
+    }
+    
+    if (!destination.latitude || !destination.longitude) {
+      return res.json({ data: null, message: 'Coordinates not available for this destination.' });
+    }
+
+    const weather = await getWeatherForDestination(destination.latitude, destination.longitude);
+    res.json({ data: weather });
+  } catch (error: any) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, error.message || 'Failed to fetch weather', 'INTERNAL_ERROR');
+  }
+};
+
+export const getNearbyDestinations = async (req: Request, res: Response) => {
+  try {
+    const radius = req.query.radius ? parseInt(req.query.radius as string, 10) : 200;
+    const nearby = await destinationService.getNearbyDestinations(req.params.id as string, radius);
+    res.json({ data: nearby });
+  } catch (error: any) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, error.message || 'Failed to fetch nearby destinations', 'INTERNAL_ERROR');
+  }
+};
+
+export const getDestinationTransport = async (req: Request, res: Response) => {
+  try {
+    const { data: destination, error } = await destinationService.getDestinationById(req.params.id as string);
+    if (error || !destination) {
+      throw new NotFoundError('Destination not found');
+    }
+
+    const transport = await getTransportToDestination(destination.name);
+    res.json({ data: transport });
+  } catch (error: any) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, error.message || 'Failed to fetch transport options', 'INTERNAL_ERROR');
+  }
+};
+
 export const createDestination = async (req: Request, res: Response) => {
-  const { data: destination, error } = await supabase
-    .from('destinations')
-    .insert([req.body])
-    .select()
-    .single();
+  const { data: destination, error } = await destinationService.createDestinationRecord(req.body);
 
   if (error) {
-    return res.status(400).json({ error: { message: 'Failed to create destination', details: error.message } });
+    throw new BadRequestError('Failed to create destination', error.message);
   }
 
   res.status(201).json({ data: destination });
 };
 
 export const updateDestination = async (req: Request, res: Response) => {
-  const { data: destination, error } = await supabase
-    .from('destinations')
-    .update(req.body)
-    .eq('id', req.params.id)
-    .select()
-    .single();
+  const { data: destination, error } = await destinationService.updateDestinationRecord(req.params.id as string, req.body);
 
   if (error || !destination) {
-    return res.status(404).json({ error: { message: 'Failed to update destination or not found' } });
+    throw new NotFoundError('Failed to update destination or not found', undefined);
   }
 
   res.json({ data: destination });
 };
 
 export const deleteDestination = async (req: Request, res: Response) => {
-  const { error } = await supabase
-    .from('destinations')
-    .delete()
-    .eq('id', req.params.id);
+  const { error } = await destinationService.deleteDestinationRecord(req.params.id as string);
 
   if (error) {
-    return res.status(400).json({ error: { message: 'Failed to delete destination', details: error.message } });
+    throw new BadRequestError('Failed to delete destination', error.message);
   }
 
   res.status(204).send();

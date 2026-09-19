@@ -16,6 +16,7 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
     return res.status(422).json({
       error: {
         message: 'Validation failed',
+        code: 'VALIDATION_ERROR',
         details: issues
       }
     });
@@ -23,12 +24,12 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
 
   // If the error is a known ApiError, use its status and message
   if (err instanceof ApiError) {
-    const responsePayload: any = { message: err.message };
+    const responsePayload: any = { message: err.message, code: err.code };
     if (err.details !== undefined) {
       responsePayload.details = err.details;
     }
     
-    return res.status(err.status).json({
+    return res.status(err.statusCode).json({
       error: responsePayload
     });
   }
@@ -42,7 +43,8 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
   if (isPostgresError) {
     return res.status(500).json({
       error: {
-        message: 'Database operation failed'
+        message: 'Database operation failed',
+        code: 'DATABASE_ERROR'
       }
     });
   }
@@ -51,7 +53,8 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
 
   return res.status(500).json({
     error: {
-      message: env.NODE_ENV === 'production' ? 'Internal Server Error' : message
+      message: env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
+      code: 'INTERNAL_ERROR'
     }
   });
 };

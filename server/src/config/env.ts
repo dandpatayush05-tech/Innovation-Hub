@@ -17,6 +17,7 @@ const envSchema = z.object({
   FRONTEND_ORIGIN: z.string().url().default('http://localhost:5173'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

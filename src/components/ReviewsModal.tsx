@@ -2,8 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getReviews, createReview, deleteReview } from '../api/reviews';
 import type { Review } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
-import { Star, X, Trash2 } from 'lucide-react';
+import { Star, X, Trash2, BadgeCheck } from 'lucide-react';
 import { isAxiosError } from 'axios';
+import { ConfirmDialog } from './ConfirmDialog';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createReviewSchema } from '../lib/validations';
+import { FieldError } from './FieldError';
 
 interface ReviewsModalProps {
   isOpen: boolean;
@@ -20,9 +25,28 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
   const [error, setError] = useState('');
   
   // Form State
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    reset,
+    formState: { errors }
+  } = useForm({
+    resolver: zodResolver(createReviewSchema),
+    defaultValues: {
+      rating: 5,
+      comment: '',
+      hotel_id: hotelId,
+      tour_id: tourId
+    }
+  });
+
+  const rating = useWatch({ control, name: 'rating' });
+  
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);
@@ -40,19 +64,17 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
     if (isOpen) {
       fetchReviews();
       // Reset form
-      setRating(5);
-      setComment('');
+      reset({
+        rating: 5,
+        comment: '',
+        hotel_id: hotelId,
+        tour_id: tourId
+      });
       setError('');
     }
   }, [isOpen, fetchReviews]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment || comment.length < 10) {
-      setError('Review must be at least 10 characters.');
-      return;
-    }
-
+  const onSubmit = async (data: any) => {
     setSubmitting(true);
     setError('');
 
@@ -60,11 +82,11 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
       await createReview({
         hotel_id: hotelId,
         tour_id: tourId,
-        rating,
-        comment,
+        rating: data.rating,
+        comment: data.comment,
       });
       await fetchReviews(); // Refresh list
-      setComment(''); // Clear input
+      reset({ rating: 5, comment: '', hotel_id: hotelId, tour_id: tourId }); // Clear input
     } catch (err: any) {
       if (isAxiosError(err) && err.response?.data?.error?.message) {
         setError(err.response.data.error.message);
@@ -76,13 +98,20 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const executeDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteReview(id);
-      setReviews((prev) => prev.filter((r) => r.id !== id));
+      await deleteReview(deleteTarget);
+      setReviews((prev) => prev.filter((r) => r.id !== deleteTarget));
     } catch (err) {
       console.error('Failed to delete review', err);
+    } finally {
+      setDeleteTarget(null);
     }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setDeleteTarget(id);
   };
 
   if (!isOpen) return null;
@@ -113,7 +142,7 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Submit Form (If authenticated) */}
           {user ? (
-            <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
+            <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
               <h3 className="text-lg font-semibold text-white mb-4">Leave a Review</h3>
               {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
               
@@ -122,7 +151,7 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
                   <button
                     key={star}
                     type="button"
-                    onClick={() => setRating(star)}
+                    onClick={() => setValue('rating', star)}
                     className="focus:outline-none"
                   >
                     <Star
@@ -133,11 +162,12 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
               </div>
 
               <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                {...register('comment')}
                 placeholder="Share your experience (min 10 characters)..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4 h-24 resize-none"
+                className={`w-full bg-slate-900 border rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-1 h-24 resize-none ${errors.comment ? 'border-red-500' : 'border-slate-700'}`}
               />
+              <FieldError error={errors.comment?.message as string} />
+              <div className="mb-4"></div>
 
               <button
                 type="submit"
@@ -171,6 +201,12 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
                         {review.user_id === user?.id && (
                           <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">You</span>
                         )}
+                        {review.verified && (
+                          <span className="flex items-center gap-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                            <BadgeCheck className="w-3 h-3" />
+                            Verified
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center mt-1">
                         {[...Array(5)].map((_, i) => (
@@ -185,7 +221,7 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
                     {/* Delete button if user owns it or is admin */}
                     {(user?.id === review.user_id || user?.role === 'admin') && (
                       <button 
-                        onClick={() => handleDelete(review.id)}
+                        onClick={() => handleDeleteClick(review.id)}
                         className="text-slate-500 hover:text-red-400 transition-colors"
                         title="Delete Review"
                       >
@@ -204,6 +240,15 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={executeDelete}
+        title="Delete Review"
+        description="Are you sure you want to delete this review? This action cannot be undone."
+        confirmText="Delete Review"
+      />
     </div>
   );
 }

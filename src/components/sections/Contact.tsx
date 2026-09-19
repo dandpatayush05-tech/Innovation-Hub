@@ -3,39 +3,40 @@ import { motion } from 'framer-motion';
 import { Button } from '../ui/Button';
 import { Mail, MapPin, Phone, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { SectionHeading } from '../ui/SectionHeading';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createContactSchema } from '../../lib/validations';
+import { FieldError } from '../FieldError';
 
 export const Contact = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', interest: '', message: '' });
-  const [touched, setTouched] = useState({ name: false, email: false, interest: false });
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors }
+  } = useForm({
+    resolver: zodResolver(createContactSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      interest: '' as any,
+      message: ''
+    }
+  });
 
   useEffect(() => {
     const handlePreselect = (e: CustomEvent) => {
-      setFormData(prev => ({ ...prev, interest: e.detail }));
+      setValue('interest', e.detail);
     };
     window.addEventListener('preselect-interest', handlePreselect as EventListener);
     return () => window.removeEventListener('preselect-interest', handlePreselect as EventListener);
-  }, []);
+  }, [setValue]);
 
-  const errors = {
-    name: touched.name && !formData.name.trim() ? "Name is required" : "",
-    email: touched.email && (!formData.email.trim() ? "Email is required" : !/^\\S+@\\S+\\.\\S+$/.test(formData.email) ? "Please enter a valid email address" : ""),
-    interest: touched.interest && !formData.interest ? "Please select an option" : ""
-  };
-
-  const handleBlur = (field: keyof typeof touched) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setTouched({ name: true, email: true, interest: true });
-    
-    const hasErrors = !formData.name.trim() || !formData.email.trim() || !/^\\S+@\\S+\\.\\S+$/.test(formData.email) || !formData.interest;
-    
-    if (!hasErrors) {
-      setIsSubmitted(true);
-    }
+  const onSubmit = (data: any) => {
+    // We aren't doing actual submission yet, just state update
+    setIsSubmitted(true);
   };
 
   return (
@@ -67,37 +68,29 @@ export const Contact = () => {
                 <p className="text-gray-600">Thanks — we'll be in touch shortly to schedule your demo.</p>
               </div>
             ) : (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label htmlFor="name" className="text-sm font-semibold text-gray-700">Full Name *</label>
                     <input 
                       type="text" 
                       id="name" 
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      onBlur={() => handleBlur('name')}
+                      {...register('name')}
                       className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:border-transparent transition-all ${errors.name ? 'border-red-500 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-primary'}`}
                       placeholder="John Doe"
-                      aria-invalid={errors.name ? 'true' : 'false'}
-                      aria-describedby={errors.name ? 'name-error' : undefined}
                     />
-                    {errors.name && <p id="name-error" className="text-red-500 text-xs mt-1" role="alert">{errors.name}</p>}
+                    <FieldError error={errors.name?.message as string} />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-semibold text-gray-700">Work Email *</label>
                     <input 
                       type="email" 
                       id="email" 
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      onBlur={() => handleBlur('email')}
+                      {...register('email')}
                       className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:border-transparent transition-all ${errors.email ? 'border-red-500 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-primary'}`}
                       placeholder="john@example.com"
-                      aria-invalid={errors.email ? 'true' : 'false'}
-                      aria-describedby={errors.email ? 'email-error' : undefined}
                     />
-                    {errors.email && <p id="email-error" className="text-red-500 text-xs mt-1" role="alert">{errors.email}</p>}
+                    <FieldError error={errors.email?.message as string} />
                   </div>
                 </div>
                 
@@ -105,11 +98,7 @@ export const Contact = () => {
                   <label htmlFor="interest" className="text-sm font-semibold text-gray-700">I am a... *</label>
                   <select 
                     id="interest" 
-                    value={formData.interest}
-                    onChange={(e) => setFormData({...formData, interest: e.target.value})}
-                    onBlur={() => handleBlur('interest')}
-                    aria-invalid={errors.interest ? 'true' : 'false'}
-                    aria-describedby={errors.interest ? 'interest-error' : undefined}
+                    {...register('interest')}
                     className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white ${errors.interest ? 'border-red-500 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-primary'}`}
                   >
                     <option value="" disabled>Select your profile</option>
@@ -118,19 +107,19 @@ export const Contact = () => {
                     <option value="agency">Travel Agency</option>
                     <option value="guide">Local Guide</option>
                   </select>
-                  {errors.interest && <p id="interest-error" className="text-red-500 text-xs mt-1" role="alert">{errors.interest}</p>}
+                  <FieldError error={errors.interest?.message as string} />
                 </div>
 
                 <div className="space-y-2">
                   <label htmlFor="message" className="text-sm font-semibold text-gray-700">How can we help?</label>
                   <textarea 
                     id="message" 
-                    value={formData.message}
-                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                    {...register('message')}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y ${errors.message ? 'border-red-500 focus:ring-red-500 bg-red-50' : 'border-gray-200'}`}
                     placeholder="Tell us about your needs..."
                   ></textarea>
+                  <FieldError error={errors.message?.message as string} />
                 </div>
                 
                 <Button type="submit" variant="accent" size="lg" className="w-full shadow-lg shadow-accent/20">

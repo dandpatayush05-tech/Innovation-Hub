@@ -1,9 +1,11 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { ChatWidget } from './components/chat/ChatWidget';
 import { Loader2 } from 'lucide-react';
+
+import { ToastProvider } from './context/ToastContext';
 
 // Lazy load components for code splitting
 const Hero = React.lazy(() => import('@/components/Hero').then(m => ({ default: m.Hero })));
@@ -12,10 +14,13 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ defa
 const BusinessDashboard = React.lazy(() => import('./pages/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })));
 const Destinations = React.lazy(() => import('./pages/Destinations').then(m => ({ default: m.Destinations })));
 const DestinationDetails = React.lazy(() => import('./pages/DestinationDetails').then(m => ({ default: m.DestinationDetails })));
+const PlaceDetails = React.lazy(() => import('./pages/PlaceDetails').then(m => ({ default: m.PlaceDetails })));
 const GlobalSearch = React.lazy(() => import('./pages/GlobalSearch').then(m => ({ default: m.GlobalSearch })));
+const ExploreCountry = React.lazy(() => import('./pages/ExploreCountry').then(m => ({ default: m.ExploreCountry })));
 const ItineraryGenerator = React.lazy(() => import('./pages/ItineraryGenerator').then(m => ({ default: m.ItineraryGenerator })));
 const ItineraryDetail = React.lazy(() => import('./pages/ItineraryDetail').then(m => ({ default: m.ItineraryDetail })));
-const DashboardLayout = React.lazy(() => import('./components/layout/DashboardLayout').then(m => ({ default: m.DashboardLayout })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const DashboardLayout = React.lazy(() => import('./layouts/DashboardLayout').then(m => ({ default: m.DashboardLayout })));
 const Hotels = React.lazy(() => import('./pages/Hotels').then(m => ({ default: m.Hotels })));
 const HotelDetails = React.lazy(() => import('./pages/HotelDetails').then(m => ({ default: m.HotelDetails })));
 const Flights = React.lazy(() => import('./pages/Flights').then(m => ({ default: m.Flights })));
@@ -27,6 +32,7 @@ const Experiences = React.lazy(() => import('./pages/Experiences').then(m => ({ 
 const ExperienceDetails = React.lazy(() => import('./pages/ExperienceDetails').then(m => ({ default: m.ExperienceDetails })));
 const Bookings = React.lazy(() => import('./pages/Bookings').then(m => ({ default: m.Bookings })));
 const UpcomingExperiences = React.lazy(() => import('./pages/UpcomingExperiences').then(m => ({ default: m.UpcomingExperiences })));
+const Unauthorized = React.lazy(() => import('./pages/Unauthorized').then(m => ({ default: m.Unauthorized })));
 
 const SuspenseFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
@@ -36,17 +42,20 @@ const SuspenseFallback = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Suspense fallback={<SuspenseFallback />}>
+    <ToastProvider>
+      <AuthProvider>
+        <Router>
+          <Suspense fallback={<SuspenseFallback />}>
           <Routes>
             <Route path="/" element={<Hero />} />
             <Route path="/login" element={<Login />} />
             <Route path="/destinations" element={<Destinations />} />
             <Route path="/destinations/:id" element={<DestinationDetails />} />
+            <Route path="/places/:id" element={<PlaceDetails />} />
             <Route path="/experiences" element={<Experiences />} />
             <Route path="/experiences/:id" element={<ExperienceDetails />} />
             <Route path="/search" element={<GlobalSearch />} />
+            <Route path="/explore/:country" element={<ExploreCountry />} />
             <Route path="/itineraries/generate" element={<ItineraryGenerator />} />
             <Route path="/itineraries/:id" element={<ItineraryDetail />} />
             
@@ -64,13 +73,25 @@ function App() {
                 <Route path="/dashboard/bookings" element={<Bookings />} />
                 <Route path="/dashboard/upcoming-experiences" element={<UpcomingExperiences />} />
               </Route>
+            </Route>
+
+            {/* Role-specific Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['business', 'admin']} />}>
               <Route path="/business-dashboard" element={<BusinessDashboard />} />
             </Route>
+            
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            {/* Error Routes */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
           <ChatWidget />
         </Suspense>
       </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

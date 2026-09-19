@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Map, Building2, Plane, Bus, Car, Compass, 
   Calendar, Ticket, CreditCard, Settings, HelpCircle, 
   Search, LogOut, User
 } from 'lucide-react';
-import { NotificationDropdown } from './NotificationDropdown';
+import { NotificationDropdown } from '../components/layout/NotificationDropdown';
 
 export const DashboardLayout = () => {
   const { user, logout } = useAuth();

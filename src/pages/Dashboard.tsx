@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import api from '../lib/axios';
 import { getUserBookings, getUserGuideBookings } from '../api/bookings';
 import { getDestinations } from '../api/destinations';
 import type { Booking, GuideBooking } from '../api/bookings';
 import type { Destination } from '../api/destinations';
-import { Plane, Calendar, Loader2, Map, Building2, Compass, ArrowRight, Bus, Car, Ticket, CreditCard } from 'lucide-react';
+import { Plane, Calendar, Map, Building2, Compass, ArrowRight, Bus, Car, Ticket, CreditCard } from 'lucide-react';
+import { LoadingState } from '../components/states/LoadingState';
+import { ErrorState } from '../components/states/ErrorState';
+import { EmptyState } from '../components/states/EmptyState';
+import { ChatWidget } from '../components/chat/ChatWidget';
 
 export const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -18,6 +22,7 @@ export const Dashboard = () => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [unifiedBookings, setUnifiedBookings] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [dataError, setDataError] = useState<unknown>(null);
 
   const [activeTab, setActiveTab] = useState('Hotels');
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,13 +37,15 @@ export const Dashboard = () => {
     const fetchData = async () => {
       if (!user) return;
       try {
+        const safeFetch = <T,>(promise: Promise<T>, fallback: T) => promise.catch(err => { console.error('Dashboard fetch error:', err); return fallback; });
+
         const [itinerariesRes, bookingsRes, guideBookingsRes, destinationsRes, autoBookingsRes, unifiedRes] = await Promise.all([
-          api.get(`/itineraries/user/${user.id}`),
-          getUserBookings(user.id),
-          getUserGuideBookings(user.id),
-          getDestinations({ limit: 4 }),
-          import('../api/auto').then(m => m.getUserAutoBookings(user.id)),
-          import('../api/bookings').then(m => m.getUnifiedBookings())
+          safeFetch(api.get(`/itineraries/user/${user.id}`), { data: { itineraries: [] } } as any),
+          safeFetch(getUserBookings(user.id), { bookings: [] } as any),
+          safeFetch(getUserGuideBookings(user.id), { guideBookings: [] } as any),
+          safeFetch(getDestinations({ limit: 4 }), { data: [] } as any),
+          safeFetch(import('../api/auto').then(m => m.getUserAutoBookings(user.id)), { bookings: [] } as any),
+          safeFetch(import('../api/bookings').then(m => m.getUnifiedBookings()), { bookings: [] } as any)
         ]);
         setItineraries(itinerariesRes.data?.itineraries || []);
         setBookings(bookingsRes.bookings || []);
@@ -48,6 +55,7 @@ export const Dashboard = () => {
         setUnifiedBookings(unifiedRes.bookings || []);
       } catch (error) {
         console.error('Failed to fetch data', error);
+        setDataError(error);
       } finally {
         setLoadingData(false);
       }
@@ -59,7 +67,15 @@ export const Dashboard = () => {
   if (authLoading || loadingData) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#C84B31]" />
+        <LoadingState message="Loading your dashboard..." />
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <ErrorState error={dataError} onRetry={() => window.location.reload()} />
       </div>
     );
   }
@@ -199,16 +215,12 @@ export const Dashboard = () => {
         </div>
         
         {bookings.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
-              <Calendar className="w-8 h-8 text-[#2A2A2A]/40" />
-            </div>
-            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming stays</h3>
-            <p className="text-[#2A2A2A]/60 mb-6">Your next adventure starts here.</p>
-            <Link to="/destinations" className="bg-black text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#333] transition-colors">
-              Find a Hotel
-            </Link>
-          </div>
+          <EmptyState 
+            icon={<Calendar className="w-12 h-12 text-[#2A2A2A]/40 mb-4" />}
+            title="No upcoming stays"
+            message="Your next adventure starts here."
+            action={<Link to="/destinations" className="bg-black text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#333] transition-colors inline-block mt-2">Find a Hotel</Link>}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {bookings.map((booking) => (
@@ -242,16 +254,12 @@ export const Dashboard = () => {
         </div>
         
         {guideBookings.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
-              <Ticket className="w-8 h-8 text-[#2A2A2A]/40" />
-            </div>
-            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming experiences</h3>
-            <p className="text-[#2A2A2A]/60 mb-6">Discover tours and activities for your trip.</p>
-            <Link to="/destinations" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
-              Explore Experiences
-            </Link>
-          </div>
+          <EmptyState 
+            icon={<Ticket className="w-12 h-12 text-[#2A2A2A]/40 mb-4" />}
+            title="No upcoming experiences"
+            message="Discover tours and activities for your trip."
+            action={<Link to="/destinations" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors inline-block mt-2">Explore Experiences</Link>}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {guideBookings.map((booking) => (
@@ -282,16 +290,12 @@ export const Dashboard = () => {
         </div>
         
         {autoBookings.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
-              <Car className="w-8 h-8 text-[#2A2A2A]/40" />
-            </div>
-            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No upcoming rides</h3>
-            <p className="text-[#2A2A2A]/60 mb-6">Book an auto or cab for your local commute.</p>
-            <button onClick={() => { setActiveTab('Auto'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
-              Book Transport
-            </button>
-          </div>
+          <EmptyState 
+            icon={<Car className="w-12 h-12 text-[#2A2A2A]/40 mb-4" />}
+            title="No upcoming rides"
+            message="Book an auto or cab for your local commute."
+            action={<button onClick={() => { setActiveTab('Auto'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors mt-2">Book Transport</button>}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {autoBookings.map((booking) => (
@@ -326,16 +330,12 @@ export const Dashboard = () => {
         </div>
 
         {itineraries.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
-              <Map className="w-8 h-8 text-[#2A2A2A]/40" />
-            </div>
-            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No itineraries yet</h3>
-            <p className="text-[#2A2A2A]/60 mb-6">Let AI plan the perfect trip for you.</p>
-            <Link to="/itineraries/generate" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors">
-              Plan with AI
-            </Link>
-          </div>
+          <EmptyState 
+            icon={<Map className="w-12 h-12 text-[#2A2A2A]/40 mb-4" />}
+            title="No itineraries yet"
+            message="Let AI plan the perfect trip for you."
+            action={<Link to="/itineraries/generate" className="bg-[#C84B31] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#A63A25] transition-colors inline-block mt-2">Plan with AI</Link>}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {itineraries.map((itinerary) => (
@@ -372,9 +372,10 @@ export const Dashboard = () => {
         </div>
         
         {destinations.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 border border-black/5 text-center">
-            <p className="text-[#2A2A2A]/60">Check back later for featured destinations.</p>
-          </div>
+          <EmptyState 
+            title="No destinations found"
+            message="Check back later for featured destinations."
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {destinations.map(dest => (
@@ -398,13 +399,11 @@ export const Dashboard = () => {
         </div>
         
         {unifiedBookings.filter(b => b.amount != null).length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 border border-black/5 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#FDFBF7] rounded-full flex items-center justify-center mb-4">
-              <CreditCard className="w-8 h-8 text-[#2A2A2A]/40" />
-            </div>
-            <h3 className="text-xl font-medium text-[#2A2A2A] mb-2">No recent transactions</h3>
-            <p className="text-[#2A2A2A]/60">Your payment history will appear here once you make a booking.</p>
-          </div>
+          <EmptyState 
+            icon={<CreditCard className="w-12 h-12 text-[#2A2A2A]/40 mb-4" />}
+            title="No recent transactions"
+            message="Your payment history will appear here once you make a booking."
+          />
         ) : (
           <div className="bg-white rounded-3xl border border-black/5 overflow-hidden">
             <table className="w-full text-left border-collapse">
@@ -440,6 +439,8 @@ export const Dashboard = () => {
         )}
       </section>
 
+      {/* AI Assistant Chatbot */}
+      <ChatWidget />
     </div>
   );
 };

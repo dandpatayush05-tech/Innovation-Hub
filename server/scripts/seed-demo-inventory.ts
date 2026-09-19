@@ -82,49 +82,79 @@ async function seed() {
     console.log('Creating destinations...');
     const destinations = [
       {
-        name: 'Paris',
-        country: 'France',
-        description: 'The City of Light, capital of France, is one of the most important and attractive cities in the world.',
-        image_url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80',
-        tags: ['romantic', 'culture', 'food'],
-        latitude: 48.8566,
-        longitude: 2.3522
+        name: 'Goa', country: 'India', description: 'Famous for its beaches, places of worship and world heritage architecture.',
+        image_url: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&q=80',
+        tags: ['beach', 'party', 'relax'], latitude: 15.2993, longitude: 74.1240,
+        best_time_to_visit: 'Mid-November to Mid-February', climate_notes: 'Tropical monsoon climate'
       },
       {
-        name: 'Tokyo',
-        country: 'Japan',
-        description: 'Japan’s busy capital, mixes the ultramodern and the traditional, from neon-lit skyscrapers to historic temples.',
-        image_url: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80',
-        tags: ['modern', 'culture', 'food'],
-        latitude: 35.6762,
-        longitude: 139.6503
+        name: 'Delhi', country: 'India', description: 'The capital of India, known for its rich history and vibrant culture.',
+        image_url: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&q=80',
+        tags: ['city', 'history', 'culture'], latitude: 28.7041, longitude: 77.1025,
+        best_time_to_visit: 'October to March', climate_notes: 'Humid subtropical climate'
       },
       {
-        name: 'New York',
-        country: 'USA',
-        description: 'New York City comprises 5 boroughs sitting where the Hudson River meets the Atlantic Ocean.',
-        image_url: 'https://images.unsplash.com/photo-1496442226666-8d4d0e2815cb?auto=format&fit=crop&q=80',
-        tags: ['city', 'culture', 'shopping'],
-        latitude: 40.7128,
-        longitude: -74.0060
+        name: 'Mumbai', country: 'India', description: 'The financial, commercial, and entertainment capital of India.',
+        image_url: 'https://images.unsplash.com/photo-1522204523234-8729aa6e3d5f?auto=format&fit=crop&q=80',
+        tags: ['city', 'culture', 'shopping'], latitude: 19.0760, longitude: 72.8777,
+        best_time_to_visit: 'October to February', climate_notes: 'Tropical wet and dry climate'
       },
       {
-        name: 'Bali',
-        country: 'Indonesia',
-        description: 'Bali is an Indonesian island known for its forested volcanic mountains, iconic rice paddies, beaches and coral reefs.',
-        image_url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80',
-        tags: ['beach', 'nature', 'relax'],
-        latitude: -8.3405,
-        longitude: 115.0920
+        name: 'Jaipur', country: 'India', description: 'The Pink City, known for its fascinating monuments and colorful markets.',
+        image_url: 'https://images.unsplash.com/photo-1533555231920-5c68b6b2165f?auto=format&fit=crop&q=80',
+        tags: ['history', 'culture', 'architecture'], latitude: 26.9124, longitude: 75.7873,
+        best_time_to_visit: 'November to February', climate_notes: 'Hot semi-arid climate'
       },
       {
-        name: 'Rome',
-        country: 'Italy',
-        description: 'Rome is the capital city of Italy. It is also the capital of the Lazio region, the centre of the Metropolitan City of Rome.',
-        image_url: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80',
-        tags: ['history', 'culture', 'food'],
-        latitude: 41.9028,
-        longitude: 12.4964
+        name: 'Kerala', country: 'India', description: 'Gods Own Country, famous for its backwaters and lush greenery.',
+        image_url: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&q=80',
+        tags: ['nature', 'relax', 'culture'], latitude: 10.8505, longitude: 76.2711,
+        best_time_to_visit: 'September to March', climate_notes: 'Tropical monsoon climate'
+      },
+      {
+        name: 'Odisha', country: 'India', description: 'Known for its tribal cultures and ancient Hindu temples.',
+        image_url: 'https://images.unsplash.com/photo-1622301827409-eec8c5ed3412?auto=format&fit=crop&q=80',
+        tags: ['history', 'culture', 'temples'], latitude: 20.9517, longitude: 85.0985,
+        best_time_to_visit: 'October to March', climate_notes: 'Tropical savanna climate'
+      },
+      {
+        name: 'Kashmir', country: 'India', description: 'Paradise on Earth, known for its beautiful landscapes and valleys.',
+        image_url: 'https://images.unsplash.com/photo-1598091383021-15ddea10925d?auto=format&fit=crop&q=80',
+        tags: ['nature', 'mountains', 'relax'], latitude: 34.0837, longitude: 74.7973,
+        best_time_to_visit: 'March to August', climate_notes: 'Humid subtropical/Continental climate'
+      },
+      {
+        name: 'Rajasthan', country: 'India', description: 'The Land of Kings, featuring majestic forts and palaces.',
+        image_url: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&q=80',
+        tags: ['history', 'culture', 'desert'], latitude: 27.0238, longitude: 74.2179,
+        best_time_to_visit: 'October to March', climate_notes: 'Arid and semi-arid climate'
+      },
+      {
+        name: 'Manali', country: 'India', description: 'A high-altitude Himalayan resort town known for backpacking and honeymooning.',
+        image_url: 'https://images.unsplash.com/photo-1605649487212-4dcf3b7211a5?auto=format&fit=crop&q=80',
+        tags: ['mountains', 'adventure', 'nature'], latitude: 32.2396, longitude: 77.1887,
+        best_time_to_visit: 'October to June', climate_notes: 'Subtropical highland climate'
+      },
+      {
+        name: 'Varanasi', country: 'India', description: 'The spiritual capital of India, situated on the banks of the Ganges.',
+        image_url: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&q=80',
+        tags: ['culture', 'spiritual', 'history'], latitude: 25.3176, longitude: 82.9739,
+        best_time_to_visit: 'October to March', climate_notes: 'Humid subtropical climate'
+      },
+      {
+        name: 'Paris', country: 'France', description: 'The City of Light.', image_url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80', tags: ['romantic', 'culture', 'food'], latitude: 48.8566, longitude: 2.3522
+      },
+      {
+        name: 'Tokyo', country: 'Japan', description: 'Japan’s busy capital.', image_url: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80', tags: ['modern', 'culture', 'food'], latitude: 35.6762, longitude: 139.6503
+      },
+      {
+        name: 'New York', country: 'USA', description: 'New York City comprises 5 boroughs.', image_url: 'https://images.unsplash.com/photo-1496442226666-8d4d0e2815cb?auto=format&fit=crop&q=80', tags: ['city', 'culture', 'shopping'], latitude: 40.7128, longitude: -74.0060
+      },
+      {
+        name: 'Bali', country: 'Indonesia', description: 'Bali is an Indonesian island.', image_url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80', tags: ['beach', 'nature', 'relax'], latitude: -8.3405, longitude: 115.0920
+      },
+      {
+        name: 'Rome', country: 'Italy', description: 'Rome is the capital city of Italy.', image_url: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80', tags: ['history', 'culture', 'food'], latitude: 41.9028, longitude: 12.4964
       }
     ];
 
@@ -370,6 +400,80 @@ async function seed() {
       }
     ];
     await supabase.from('tours').insert(tours);
+
+    // 9. Create Places
+    console.log('Creating places...');
+    const places = [
+      // ATTRACTIONS
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Taj Mahal', description: 'An ivory-white marble mausoleum on the right bank of the river Yamuna.', category: 'attraction', latitude: 27.1751, longitude: 78.0421, image_url: 'https://images.unsplash.com/photo-1564507592208-0176882655cc?auto=format&fit=crop&q=80', rating: 4.9
+      },
+      {
+        business_id: businessId, destination_id: destMap['Mumbai'], name: 'Gateway of India', description: 'An arch-monument built in the early 20th century.', category: 'attraction', latitude: 18.9220, longitude: 72.8347, image_url: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&q=80', rating: 4.6
+      },
+      {
+        business_id: businessId, destination_id: destMap['Odisha'], name: 'Konark Sun Temple', description: 'A 13th-century CE Sun temple at Konark about 35 kilometres northeast from Puri.', category: 'attraction', latitude: 19.8876, longitude: 86.0945, image_url: 'https://images.unsplash.com/photo-1622301827409-eec8c5ed3412?auto=format&fit=crop&q=80', rating: 4.8
+      },
+      {
+        business_id: businessId, destination_id: destMap['Odisha'], name: 'Jagannath Temple', description: 'An important Hindu temple dedicated to Jagannath, a form of Vishnu, in Puri.', category: 'attraction', latitude: 19.8048, longitude: 85.8179, image_url: 'https://images.unsplash.com/photo-1599896792372-50d4dcf9c4ff?auto=format&fit=crop&q=80', rating: 4.8
+      },
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'India Gate', description: 'A war memorial located astride the Rajpath, on the eastern edge of the ceremonial axis of New Delhi.', category: 'attraction', latitude: 28.6129, longitude: 77.2295, image_url: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&q=80', rating: 4.7
+      },
+      // RESTAURANTS & SHOPS FOR GOA
+      {
+        business_id: businessId, destination_id: destMap['Goa'], name: 'Gunpowder', description: 'South Indian coastal cuisine.', category: 'restaurant', rating: 4.7, image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80', latitude: 15.5562, longitude: 73.7538
+      },
+      {
+        business_id: businessId, destination_id: destMap['Goa'], name: 'Thalassa', description: 'Greek taverna with sunset views.', category: 'restaurant', rating: 4.6, image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80', latitude: 15.6171, longitude: 73.7441
+      },
+      {
+        business_id: businessId, destination_id: destMap['Goa'], name: 'Fishermans Wharf', description: 'Goan seafood delicacies.', category: 'restaurant', rating: 4.5, image_url: 'https://images.unsplash.com/photo-1574936145840-28808d77a0b6?auto=format&fit=crop&q=80', latitude: 15.1764, longitude: 73.9406
+      },
+      {
+        business_id: businessId, destination_id: destMap['Goa'], name: 'Anjuna Flea Market', description: 'Famous wednesday flea market.', category: 'shop', rating: 4.4, image_url: 'https://images.unsplash.com/photo-1552568282-386d9a9097e1?auto=format&fit=crop&q=80', latitude: 15.5800, longitude: 73.7429
+      },
+      {
+        business_id: businessId, destination_id: destMap['Goa'], name: 'Mapusa Market', description: 'Traditional Goan Friday market.', category: 'shop', rating: 4.3, image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80', latitude: 15.5905, longitude: 73.8117
+      },
+      // RESTAURANTS & SHOPS FOR DELHI
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Bukhara', description: 'World-renowned North West Frontier cuisine.', category: 'restaurant', rating: 4.8, image_url: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80', latitude: 28.5973, longitude: 77.1732
+      },
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Indian Accent', description: 'Inventive Indian cuisine.', category: 'restaurant', rating: 4.9, image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80', latitude: 28.5882, longitude: 77.2341
+      },
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Karim', description: 'Historic Mughal cuisine eatery.', category: 'restaurant', rating: 4.6, image_url: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80', latitude: 28.6496, longitude: 77.2335
+      },
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Dilli Haat', description: 'Open-air craft bazaar and food plaza.', category: 'shop', rating: 4.5, image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80', latitude: 28.5724, longitude: 77.2078
+      },
+      {
+        business_id: businessId, destination_id: destMap['Delhi'], name: 'Khan Market', description: 'Upscale shopping district.', category: 'shop', rating: 4.6, image_url: 'https://images.unsplash.com/photo-1519011985187-444d62641929?auto=format&fit=crop&q=80', latitude: 28.6006, longitude: 77.2270
+      },
+      // RESTAURANTS & SHOPS FOR JAIPUR
+      {
+        business_id: businessId, destination_id: destMap['Jaipur'], name: 'Suvarna Mahal', description: 'Fine dining in a royal palace setting.', category: 'restaurant', rating: 4.8, image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80', latitude: 26.8974, longitude: 75.8080
+      },
+      {
+        business_id: businessId, destination_id: destMap['Jaipur'], name: 'Chokhi Dhani', description: 'Traditional Rajasthani village resort and restaurant.', category: 'restaurant', rating: 4.5, image_url: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80', latitude: 26.7667, longitude: 75.8340
+      },
+      {
+        business_id: businessId, destination_id: destMap['Jaipur'], name: '1135 AD', description: 'Authentic royal Rajasthani cuisine.', category: 'restaurant', rating: 4.7, image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80', latitude: 26.9855, longitude: 75.8513
+      },
+      {
+        business_id: businessId, destination_id: destMap['Jaipur'], name: 'Johari Bazaar', description: 'Famous market for jewelry and gems.', category: 'shop', rating: 4.6, image_url: 'https://images.unsplash.com/photo-1552568282-386d9a9097e1?auto=format&fit=crop&q=80', latitude: 26.9189, longitude: 75.8271
+      },
+      {
+        business_id: businessId, destination_id: destMap['Jaipur'], name: 'Bapu Bazaar', description: 'Popular for traditional Rajasthani textiles.', category: 'shop', rating: 4.5, image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80', latitude: 26.9182, longitude: 75.8239
+      }
+    ];
+    const { error: pError } = await supabase.from('places').insert(places);
+    if (pError) {
+      console.error('Places Insert Error:', pError);
+      throw pError;
+    }
 
     console.log('✅ Database Seeding Completed Successfully!');
   } catch (error) {

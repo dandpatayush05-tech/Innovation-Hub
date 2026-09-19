@@ -1,50 +1,30 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
-import { AuthRequest, isOwnerOrAdmin } from '../middleware/authGuard';
+import * as hotelService from '../services/hotelService';
+import { AuthRequest } from '../middleware/authGuard';
+import { isOwnerOrAdmin } from '../middleware/requireRole';
+import { ApiError, ForbiddenError, NotFoundError } from '../utils/ApiError';
 
 export const getHotels = async (req: Request, res: Response) => {
-  // Pagination
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
-  const offset = (page - 1) * limit;
-
-  let query = supabase.from('hotels').select('*', { count: 'exact' });
   
-  if (req.query.destinationId) {
-    query = query.eq('destination_id', req.query.destinationId as string);
-  }
-  
-  // Search by name
-  if (req.query.search) {
-    const searchParam = req.query.search as string;
-    query = query.ilike('name', `%${searchParam}%`);
-  }
-
-  // Filter by price
-  if (req.query.minPrice) {
-    query = query.gte('price_per_night', parseFloat(req.query.minPrice as string));
-  }
-  if (req.query.maxPrice) {
-    query = query.lte('price_per_night', parseFloat(req.query.maxPrice as string));
-  }
-
-  // Filter by rating
-  if (req.query.minRating) {
-    query = query.gte('rating', parseFloat(req.query.minRating as string));
-  }
-
-  // Sorting
   const sort = (req.query.sort as string) || 'created_at';
-  const order = (req.query.order as string) === 'asc' ? true : false; // default desc
-  query = query.order(sort, { ascending: order });
+  const order = (req.query.order as string) === 'asc' ? true : false;
 
-  // Apply pagination
-  query = query.range(offset, offset + limit - 1);
-
-  const { data: hotels, count, error } = await query;
+  const { data: hotels, count, error } = await hotelService.listHotels({
+    page,
+    limit,
+    destinationId: req.query.destinationId as string | undefined,
+    search: req.query.search as string | undefined,
+    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+    minRating: req.query.minRating ? parseFloat(req.query.minRating as string) : undefined,
+    sort,
+    order
+  });
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch hotels', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch hotels', 'INTERNAL_ERROR', error.message);
   }
 
   const total = count || 0;
@@ -62,82 +42,57 @@ export const getHotels = async (req: Request, res: Response) => {
 };
 
 export const getHotel = async (req: Request, res: Response) => {
-  const { data: hotel, error } = await supabase.from('hotels').select('*').eq('id', req.params.id).single();
+  const { data: hotel, error } = await hotelService.getHotelById(req.params.id as string);
   
-  if (error || !hotel) return res.status(404).json({ error: { message: 'Hotel not found' } });
+  if (error || !hotel) {
+    throw new NotFoundError('Hotel not found', undefined);
+  }
+  
   res.json({ data: hotel });
 };
 
 export const createHotel = async (req: AuthRequest, res: Response) => {
-  // Verify the user owns a business
-  const { data: business } = await supabase.from('businesses').select('*').eq('user_id', req.user?.id).single();
+  const { data: business } = await hotelService.getBusinessByUserId(req.user?.id as string);
   
   if (!business) {
-    return res.status(403).json({ error: { message: 'You must register a business before creating a hotel' } });
+    throw new ForbiddenError('You must register a business before creating a hotel', undefined);
   }
 
-  // Convert destinationId to destination_id
   const payload = { ...req.body };
   if (payload.destinationId) {
     payload.destination_id = payload.destinationId;
     delete payload.destinationId;
   }
-  
-  // Convert pricePerNight to price_per_night
   if (payload.pricePerNight) {
     payload.price_per_night = payload.pricePerNight;
     delete payload.pricePerNight;
   }
-
-  // Convert imageUrl to image_url
   if (payload.imageUrl) {
     payload.image_url = payload.imageUrl;
     delete payload.imageUrl;
   }
-
   payload.business_id = business.id;
 
-  const { data: hotel, error } = await supabase
-    .from('hotels')
-    .insert(payload)
-    .select()
-    .single();
+  const { data: hotel, error } = await hotelService.createHotelRecord(payload);
     
   if (error || !hotel) {
-    return res.status(500).json({ error: { message: 'Failed to create hotel', details: error?.message } });
+    throw new ApiError(500, 'Failed to create hotel', 'INTERNAL_ERROR', error?.message);
   }
 
   res.status(201).json({ message: 'Hotel created successfully', data: hotel });
 };
 
 export const updateHotel = async (req: AuthRequest, res: Response) => {
-  // Fetch existing hotel to check business_id
-  const { data: existingHotel, error: fetchError } = await supabase
-    .from('hotels')
-    .select('business_id')
-    .eq('id', req.params.id)
-    .single();
+  const { ownerId, error: checkError } = await hotelService.getBusinessOwnerByHotelId(req.params.id as string);
 
-  if (fetchError || !existingHotel) {
-    return res.status(404).json({ error: { message: 'Hotel not found' } });
+  if (checkError || !ownerId) {
+    throw new NotFoundError('Hotel or associated business not found', undefined);
   }
 
-  // Fetch the business to check ownership
-  const { data: existingBusiness, error: businessError } = await supabase
-    .from('businesses')
-    .select('user_id')
-    .eq('id', existingHotel.business_id)
-    .single();
-
-  if (businessError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Associated business not found' } });
+  if (!isOwnerOrAdmin(req.user!, ownerId)) {
+    throw new ForbiddenError('Forbidden: You do not own this hotel', undefined);
   }
 
-  if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this hotel' } });
-  }
-
-  // Map camelCase to snake_case for DB
   const updateData: Record<string, unknown> = {};
   if (req.body.name) updateData.name = req.body.name;
   if (req.body.description !== undefined) updateData.description = req.body.description;
@@ -145,59 +100,71 @@ export const updateHotel = async (req: AuthRequest, res: Response) => {
   if (req.body.pricePerNight) updateData.price_per_night = req.body.pricePerNight;
   if (req.body.amenities) updateData.amenities = req.body.amenities;
   if (req.body.imageUrl) updateData.image_url = req.body.imageUrl;
+  if (req.body.availability !== undefined) updateData.availability = req.body.availability;
+  if (req.body.latitude !== undefined) updateData.latitude = req.body.latitude;
+  if (req.body.longitude !== undefined) updateData.longitude = req.body.longitude;
   if (req.user?.role === 'admin' && req.body.rating !== undefined) {
       updateData.rating = req.body.rating;
   }
 
-  const { data: hotel, error } = await supabase
-    .from('hotels')
-    .update(updateData)
-    .eq('id', req.params.id)
-    .select()
-    .single();
+  const { data: hotel, error } = await hotelService.updateHotelRecord(req.params.id as string, updateData);
 
   if (error || !hotel) {
-    return res.status(500).json({ error: { message: 'Failed to update hotel', details: error?.message } });
+    throw new ApiError(500, 'Failed to update hotel', 'INTERNAL_ERROR', error?.message);
   }
 
   res.json({ data: hotel });
 };
 
 export const deleteHotel = async (req: AuthRequest, res: Response) => {
-  // Fetch existing hotel to check business_id
-  const { data: existingHotel, error: fetchError } = await supabase
-    .from('hotels')
-    .select('business_id')
-    .eq('id', req.params.id)
-    .single();
+  const { ownerId, error: checkError } = await hotelService.getBusinessOwnerByHotelId(req.params.id as string);
 
-  if (fetchError || !existingHotel) {
-    return res.status(404).json({ error: { message: 'Hotel not found' } });
+  if (checkError || !ownerId) {
+    throw new NotFoundError('Hotel or associated business not found', undefined);
   }
 
-  // Fetch the business to check ownership
-  const { data: existingBusiness, error: businessError } = await supabase
-    .from('businesses')
-    .select('user_id')
-    .eq('id', existingHotel.business_id)
-    .single();
-
-  if (businessError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Associated business not found' } });
+  if (!isOwnerOrAdmin(req.user!, ownerId)) {
+    throw new ForbiddenError('Forbidden: You do not own this hotel', undefined);
   }
 
-  if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this hotel' } });
-  }
-
-  const { error } = await supabase
-    .from('hotels')
-    .delete()
-    .eq('id', req.params.id);
+  const { error } = await hotelService.deleteHotelRecord(req.params.id as string);
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to delete hotel', details: error.message } });
+    throw new ApiError(500, 'Failed to delete hotel', 'INTERNAL_ERROR', error.message);
   }
 
   res.status(204).send();
+};
+
+export const getNearbyHotels = async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+
+  const { data: hotels, count, error } = await hotelService.listNearbyHotels({
+    latitude: Number(req.query.latitude),
+    longitude: Number(req.query.longitude),
+    radius: Number(req.query.radius || 5),
+    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+    rating: req.query.rating ? parseFloat(req.query.rating as string) : undefined,
+    page,
+    limit
+  });
+
+  if (error) {
+    throw new ApiError(500, 'Failed to fetch nearby hotels', 'INTERNAL_ERROR', error.message);
+  }
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  res.json({
+    data: hotels || [],
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages
+    }
+  });
 };

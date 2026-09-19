@@ -1,48 +1,6 @@
-import api from './axios';
-
-export interface IntelligenceData {
-  where_to_go?: string[];
-  how_to_reach?: {
-    flight?: string;
-    train?: string;
-    bus?: string;
-    auto?: string;
-  };
-  best_time_to_visit?: {
-    months?: string;
-    notes?: string;
-  };
-  what_to_do?: string[];
-  budget?: {
-    hotel?: number;
-    food?: number;
-    activities?: number;
-  };
-}
-
-export interface Destination {
-  id: string;
-  name: string;
-  country: string;
-  description: string;
-  image_url: string;
-  tags: string[];
-  latitude?: number;
-  longitude?: number;
-  intelligence_data?: IntelligenceData;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DestinationsResponse {
-  data: Destination[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+import api from '../lib/axios';
+import { Destination, DestinationsResponse } from '../types/destination';
+export * from '../types/destination';
 
 export interface GetDestinationsParams {
   page?: number;
@@ -52,6 +10,7 @@ export interface GetDestinationsParams {
   tag?: string;
   sort?: string;
   order?: 'asc' | 'desc';
+  popular?: boolean;
 }
 
 export const getDestinations = async (params?: GetDestinationsParams): Promise<DestinationsResponse> => {
@@ -61,6 +20,11 @@ export const getDestinations = async (params?: GetDestinationsParams): Promise<D
 
 export const getDestination = async (id: string): Promise<{ data: Destination }> => {
   const response = await api.get(`/destinations/${id}`);
+  return response.data;
+};
+
+export const getDestinationDetail = async (id: string): Promise<any> => {
+  const response = await api.get(`/destinations/${id}/detail`);
   return response.data;
 };
 
@@ -76,4 +40,20 @@ export const updateDestination = async (id: string, data: Partial<Destination>):
 
 export const deleteDestination = async (id: string): Promise<void> => {
   await api.delete(`/destinations/${id}`);
+};
+
+export const getDestinationWeather = async (id: string): Promise<any> => {
+  const response = await api.get(`/destinations/${id}/weather`);
+  return response.data;
+};
+
+export const getNearbyDestinations = async (id: string, radius?: number): Promise<any> => {
+  const params = radius ? { radius } : {};
+  const response = await api.get(`/destinations/${id}/nearby`, { params });
+  return response.data;
+};
+
+export const getDestinationTransport = async (id: string): Promise<any> => {
+  const response = await api.get(`/destinations/${id}/transport`);
+  return response.data;
 };

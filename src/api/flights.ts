@@ -1,4 +1,4 @@
-import api from './axios';
+import api from '../lib/axios';
 
 export interface Flight {
   id: string;
@@ -25,16 +25,12 @@ export interface FlightsResponse {
   };
 }
 
-export interface GetFlightsParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  departureAirport?: string;
-  arrivalAirport?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  sort?: string;
-  order?: 'asc' | 'desc';
+export interface FlightSearchParams {
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  passengers: number;
 }
 
 export interface FlightBooking {
@@ -49,8 +45,8 @@ export interface FlightBooking {
   flight?: Flight;
 }
 
-export const getFlights = async (params?: GetFlightsParams): Promise<FlightsResponse> => {
-  const response = await api.get('/flights', { params });
+export const searchFlights = async (params: FlightSearchParams): Promise<{ outbound: Flight[], return: Flight[] | null }> => {
+  const response = await api.get('/flights/search', { params });
   return response.data;
 };
 

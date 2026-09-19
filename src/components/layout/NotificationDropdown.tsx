@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Clock, ShieldAlert, CreditCard, X, CalendarCheck } from 'lucide-react';
 import { type AppNotification, getNotifications, markAsRead, markAllAsRead } from '../../api/notifications';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const { info: toastInfo } = useToast();
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -22,9 +24,22 @@ export const NotificationDropdown = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Poll every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const sse = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`);
+        
+        sse.onmessage = (event) => {
+          try {
+            const newNotification = JSON.parse(event.data);
+            setNotifications(prev => [newNotification, ...prev]);
+            toastInfo(`${newNotification.title}: ${newNotification.message}`);
+          } catch (e) {
+            console.error('Error parsing SSE data', e);
+          }
+        };
+
+        return () => sse.close();
+      }
     }
   }, [user]);
 

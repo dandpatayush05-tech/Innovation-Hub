@@ -1,29 +1,6 @@
-import api from './axios';
-
-export interface Tour {
-  id: string;
-  business_id: string;
-  destination_id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration_hours: number;
-  category: string;
-  availability: number;
-  image_url: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ToursResponse {
-  data: Tour[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+import api from '../lib/axios';
+import { Tour, ToursResponse } from '../types/tour';
+export * from '../types/tour';
 
 export interface GetToursParams {
   page?: number;

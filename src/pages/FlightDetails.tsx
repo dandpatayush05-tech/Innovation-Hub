@@ -4,11 +4,13 @@ import { getFlight, createFlightBooking, type Flight } from '../api/flights';
 import { Checkout } from '../components/Checkout';
 import { Plane, Loader2, Info, ArrowLeft, Check, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export const FlightDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { error: toastError } = useToast();
   
   const [flight, setFlight] = useState<Flight | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export const FlightDetails = () => {
         return prev.filter(s => s !== seatNumber);
       } else {
         if (prev.length >= 6) {
-          alert('You can select a maximum of 6 seats at once.');
+          toastError('You can select a maximum of 6 seats at once.');
           return prev;
         }
         return [...prev, seatNumber];

@@ -4,11 +4,13 @@ import { getBus, createBusBooking, type Bus } from '../api/buses';
 import { Checkout } from '../components/Checkout';
 import { Loader2, Info, ArrowLeft, Check, User, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export const BusDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [bus, setBus] = useState<Bus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export const BusDetails = () => {
         return prev.filter(s => s !== seatNumber);
       } else {
         if (prev.length >= 6) {
-          alert('You can select a maximum of 6 seats at once.');
+          toastError('You can select a maximum of 6 seats at once.');
           return prev;
         }
         return [...prev, seatNumber];
@@ -72,7 +74,7 @@ export const BusDetails = () => {
   const proceedToReview = () => {
     const isValid = passengerDetails.every(p => p.firstName.trim() && p.lastName.trim());
     if (!isValid) {
-      alert('Please fill out all passenger names.');
+      toastError('Please fill out all passenger names.');
       return;
     }
     setStep('review');
@@ -80,7 +82,7 @@ export const BusDetails = () => {
 
   const proceedToPayment = async () => {
     if (!user) {
-      alert('Please log in to book.');
+      toastError('Please log in to book.');
       return;
     }
     try {

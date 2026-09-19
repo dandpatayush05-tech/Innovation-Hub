@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
 import { createNotification } from './notificationController';
+import { ApiError, BadRequestError, ForbiddenError, NotFoundError } from '../utils/ApiError';
+
 
 // Initialize Razorpay (with dummy fallback keys so the app doesn't crash if env vars are missing)
 const razorpay = new Razorpay({
@@ -16,7 +18,7 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
     const { booking_id, booking_type } = req.body;
 
     if (!booking_id || !booking_type) {
-      return res.status(400).json({ error: { message: 'booking_id and booking_type are required' } });
+      throw new BadRequestError('booking_id and booking_type are required', undefined);
     }
 
     let calculatedAmount = 0;
@@ -24,8 +26,8 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
     switch (booking_type) {
       case 'hotel': {
         const { data: booking } = await supabase.from('bookings').select('*, hotel:hotels(*)').eq('id', booking_id).single();
-        if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-        if (booking.user_id !== req.user?.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+        if (!booking) throw new NotFoundError('Booking not found', undefined);
+        if (booking.user_id !== req.user?.id) throw new ForbiddenError('Forbidden', undefined);
         
         // Calculate days
         const checkIn = new Date(booking.check_in).getTime();
@@ -36,8 +38,8 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
       }
       case 'tour': {
         const { data: booking } = await supabase.from('guide_bookings').select('*').eq('id', booking_id).single();
-        if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-        if (booking.user_id !== req.user?.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+        if (!booking) throw new NotFoundError('Booking not found', undefined);
+        if (booking.user_id !== req.user?.id) throw new ForbiddenError('Forbidden', undefined);
         
         // Use total_price from the booking record
         if (booking.total_price) {
@@ -52,22 +54,22 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
       }
       case 'flight': {
         const { data: booking } = await supabase.from('flight_bookings').select('*, flight:flights(*)').eq('id', booking_id).single();
-        if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-        if (booking.user_id !== req.user?.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+        if (!booking) throw new NotFoundError('Booking not found', undefined);
+        if (booking.user_id !== req.user?.id) throw new ForbiddenError('Forbidden', undefined);
         calculatedAmount = booking.flight.price * booking.passengers;
         break;
       }
       case 'bus': {
         const { data: booking } = await supabase.from('bus_bookings').select('*, bus:buses(*)').eq('id', booking_id).single();
-        if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-        if (booking.user_id !== req.user?.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+        if (!booking) throw new NotFoundError('Booking not found', undefined);
+        if (booking.user_id !== req.user?.id) throw new ForbiddenError('Forbidden', undefined);
         calculatedAmount = booking.bus.price * booking.seats;
         break;
       }
       case 'auto': {
         const { data: booking } = await supabase.from('auto_bookings').select('*, auto:auto_vehicles(*)').eq('id', booking_id).single();
-        if (!booking) return res.status(404).json({ error: { message: 'Booking not found' } });
-        if (booking.user_id !== req.user?.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+        if (!booking) throw new NotFoundError('Booking not found', undefined);
+        if (booking.user_id !== req.user?.id) throw new ForbiddenError('Forbidden', undefined);
         
         let days = 1;
         if (booking.end_date) {
@@ -92,11 +94,11 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
         break;
       }
       default:
-        return res.status(400).json({ error: { message: 'Invalid booking_type' } });
+        throw new BadRequestError('Invalid booking_type', undefined);
     }
 
     if (calculatedAmount <= 0) {
-      return res.status(400).json({ error: { message: 'Invalid calculated amount' } });
+      throw new BadRequestError('Invalid calculated amount', undefined);
     }
 
     const options = {
@@ -111,7 +113,7 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
     res.json({ orderId: order.id, amount: order.amount, currency: order.currency, calculatedAmount });
   } catch (error: any) {
     console.error('Error creating Razorpay order:', error);
-    res.status(500).json({ error: { message: 'Failed to create payment order.' } });
+    throw new ApiError(500, 'Failed to create payment order.', 'INTERNAL_ERROR', undefined);
   }
 };
 
@@ -189,7 +191,7 @@ export const verifyRazorpaySignature = async (req: AuthRequest, res: Response) =
     }
   } catch (error) {
     console.error('Error verifying Razorpay signature:', error);
-    res.status(500).json({ error: { message: 'Failed to verify payment.' } });
+    throw new ApiError(500, 'Failed to verify payment.', 'INTERNAL_ERROR', undefined);
   }
 };
 

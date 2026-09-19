@@ -54,12 +54,16 @@ const authLimiter = rateLimit({
 });
 
 import authRoutes from './routes/authRoutes';
-import travelRoutes from './routes/travelRoutes';
 import itineraryRoutes from './routes/itineraryRoutes';
 import chatRoutes from './routes/chatRoutes';
 import bookingRoutes from './routes/bookingRoutes';
-import notificationRoutes from './routes/notificationRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import destinationRoutes from './routes/destinationRoutes';
+import hotelRoutes from './routes/hotelRoutes';
+import tourRoutes from './routes/tourRoutes';
+import placeRoutes from './routes/placeRoutes';
+import transportRoutes from './routes/transportRoutes';
+import tripRoutes from './routes/tripRoutes';
 
 // Routes
 app.get('/api/health', async (req, res) => {
@@ -77,10 +81,16 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/itineraries', itineraryRoutes);
 app.use('/api/conversations', chatRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api', travelRoutes);
+
+// Grouped resources mounted at /api to preserve exact paths
+app.use('/api', bookingRoutes);
+app.use('/api', destinationRoutes);
+app.use('/api', hotelRoutes);
+app.use('/api', tourRoutes);
+app.use('/api', placeRoutes);
+app.use('/api', transportRoutes);
+app.use('/api', tripRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);

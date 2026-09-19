@@ -1,12 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import api from '../api/axios';
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import api from '../lib/axios';
+import { type User } from '../types/user';
+export type { User };
 
 interface AuthContextType {
   user: User | null;

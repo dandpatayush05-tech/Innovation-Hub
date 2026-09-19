@@ -4,6 +4,8 @@ import { supabase } from '../config/supabase';
 import { generateTokens, setRefreshCookie, clearRefreshCookie } from '../services/auth';
 import { AuthRequest } from '../middleware/authGuard';
 import crypto from 'crypto';
+import { ApiError, UnauthorizedError, NotFoundError, ConflictError } from '../utils/ApiError';
+
 
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
@@ -12,7 +14,7 @@ export const register = async (req: Request, res: Response) => {
 
   const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).single();
   if (existingUser) {
-    return res.status(409).json({ error: { message: 'Email already in use' } });
+    throw new ConflictError('Email already in use', undefined);
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -25,7 +27,7 @@ export const register = async (req: Request, res: Response) => {
     .single();
 
   if (error || !user) {
-    return res.status(500).json({ error: { message: 'Failed to create user' } });
+    throw new ApiError(500, 'Failed to create user', 'INTERNAL_ERROR', undefined);
   }
 
   const { accessToken, refreshToken } = generateTokens(user.id, user.role);
@@ -50,12 +52,12 @@ export const login = async (req: Request, res: Response) => {
   const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
   
   if (!user) {
-    return res.status(401).json({ error: { message: 'Invalid credentials' } });
+    throw new UnauthorizedError('Invalid credentials', undefined);
   }
 
   const isMatch = await bcrypt.compare(password, user.password_hash);
   if (!isMatch) {
-    return res.status(401).json({ error: { message: 'Invalid credentials' } });
+    throw new UnauthorizedError('Invalid credentials', undefined);
   }
 
   const { accessToken, refreshToken } = generateTokens(user.id, user.role);
@@ -77,7 +79,7 @@ export const login = async (req: Request, res: Response) => {
 export const refresh = async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
   if (!refreshToken) {
-    return res.status(401).json({ error: { message: 'Unauthorized: No refresh token' } });
+    throw new UnauthorizedError('Unauthorized: No refresh token', undefined);
   }
 
   const hashedToken = hashToken(refreshToken);
@@ -85,7 +87,7 @@ export const refresh = async (req: Request, res: Response) => {
   
   if (!user) {
     clearRefreshCookie(res);
-    return res.status(401).json({ error: { message: 'Unauthorized: Invalid refresh token' } });
+    throw new UnauthorizedError('Unauthorized: Invalid refresh token', undefined);
   }
 
   const { accessToken, refreshToken: newRefreshToken } = generateTokens(user.id, user.role);
@@ -114,7 +116,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
   const { data: user } = await supabase.from('users').select('*').eq('id', req.user?.id).single();
   
   if (!user) {
-    return res.status(404).json({ error: { message: 'User not found' } });
+    throw new NotFoundError('User not found', undefined);
   }
   
   res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
@@ -128,7 +130,7 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
   if (email) {
     const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
     if (existing && existing.id !== req.user?.id) {
-      return res.status(409).json({ error: { message: 'Email already in use' } });
+      throw new ConflictError('Email already in use', undefined);
     }
     updates.email = email;
   }
@@ -141,7 +143,7 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
     .single();
 
   if (error || !user) {
-    return res.status(404).json({ error: { message: 'User not found' } });
+    throw new NotFoundError('User not found', undefined);
   }
 
   res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });

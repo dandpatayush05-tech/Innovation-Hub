@@ -1,237 +1,86 @@
-# Innovation Hub Tour API Documentation
+# API Documentation
 
-## Base Information
-- **Base URL**: `http://localhost:5000/api`
-- **Environment**: Development
-- **Content Type**: `application/json`
-
-## Authentication Flow
-The API uses a standard dual-token JWT flow:
-1. **Login**: POST to `/auth/login` to receive an `accessToken` (15m expiry) and `refreshToken` (7d expiry).
-2. **Authorize Requests**: Include the `accessToken` in the `Authorization` header of authenticated endpoints:
-   ```
-   Authorization: Bearer <your_access_token>
-   ```
-3. **Refresh**: When the `accessToken` expires, use the `refreshToken` to POST to `/auth/refresh` to get a new pair.
+## Standard Error Response Format
+The API uses a consistent error response shape across most controllers.
+```json
+{
+  "error": {
+    "message": "Human readable error message",
+    "code": "INTERNAL_ERROR | VALIDATION_ERROR | UNAUTHORIZED | etc",
+    "details": "Optional detailed string from the database or validation library"
+  }
+}
+```
+*Note: Any Zod validation errors from middleware may wrap their issues differently before hitting the controller, but business-logic errors follow the shape above.*
 
 ---
 
-## 1. Authentication Endpoints
+## Auth (`/api/auth`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| POST | `/register` | No | - | `{ name, email, password, role }` | `{ message, data: user, tokens: { accessToken, refreshToken } }` |
+| POST | `/login` | No | - | `{ email, password }` | `{ message, data: user, tokens: { accessToken, refreshToken } }` |
+| POST | `/refresh` | No (Cookie) | - | - | `{ accessToken }` |
+| POST | `/logout` | Yes | Any | - | `204 No Content` |
+| GET | `/me` | Yes | Any | - | `{ data: user }` |
+| PATCH | `/me` | Yes | Any | `{ name?, password? }` | `{ data: user }` |
 
-### 1.1 Login
-- **Method**: `POST /auth/login`
-- **Role Required**: Public
-- **Request Body**:
-  ```json
-  {
-    "email": "traveler@example.com",
-    "password": "password123"
-  }
-  ```
-- **Response** (200 OK):
-  ```json
-  {
-    "message": "Login successful",
-    "user": {
-      "id": "uuid",
-      "email": "traveler@example.com",
-      "role": "traveler",
-      "name": "John Doe"
-    },
-    "tokens": {
-      "accessToken": "eyJhbG...",
-      "refreshToken": "eyJhbG..."
-    }
-  }
-  ```
-- **Errors**: `401 Unauthorized` (Invalid credentials), `422 Unprocessable Entity` (Validation failure)
+## Destinations (`/api/travel/destinations`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| GET | `/` | No | - | - | `{ data: destinations[], pagination: {...} }` |
+| GET | `/:id` | No | - | - | `{ data: destination }` |
+| POST | `/` | Yes | Business/Admin | `{ name, country, description, imageUrl... }` | `{ message, data: destination }` |
+| PATCH | `/:id` | Yes | Business/Admin | `{ name?, country?... }` | `{ data: destination }` |
+| DELETE| `/:id` | Yes | Business/Admin | - | `204 No Content` |
 
-### 1.2 Register
-- **Method**: `POST /auth/register`
-- **Role Required**: Public
-- **Request Body**:
-  ```json
-  {
-    "email": "traveler@example.com",
-    "password": "password123",
-    "name": "John Doe",
-    "role": "traveler" // Optional. Defaults to traveler.
-  }
-  ```
-- **Response** (201 Created): Same as Login response.
-- **Errors**: `409 Conflict` (Email exists), `422 Unprocessable Entity` (Validation failure)
+## Businesses (`/api/travel/businesses`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| GET | `/` | No | - | - | `{ data: businesses[] }` |
+| GET | `/:id` | No | - | - | `{ data: business }` |
+| POST | `/register`| Yes | Any | `{ businessName, businessType, contactEmail...}`| `{ message, data: business }` |
+| PATCH | `/:id` | Yes | Business/Admin | `{ businessName?... }` | `{ data: business }` |
+| DELETE| `/:id` | Yes | Business/Admin | - | `204 No Content` |
 
-### 1.3 Refresh Token
-- **Method**: `POST /auth/refresh`
-- **Role Required**: Public
-- **Request Body**:
-  ```json
-  {
-    "refreshToken": "eyJhbG..."
-  }
-  ```
-- **Response** (200 OK): Returns new `tokens` object.
-- **Errors**: `401 Unauthorized` (Invalid/Expired token)
+## Hotels (`/api/travel/hotels`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| GET | `/` | No | - | - | `{ data: hotels[], pagination: {...} }` |
+| GET | `/:id` | No | - | - | `{ data: hotel }` |
+| POST | `/` | Yes | Business | `{ name, destinationId, pricePerNight... }`| `{ message, data: hotel }` |
+| PATCH | `/:id` | Yes | Business/Admin | `{ name?, pricePerNight?... }` | `{ data: hotel }` |
+| DELETE| `/:id` | Yes | Business/Admin | - | `204 No Content` |
 
-### 1.4 Get Me
-- **Method**: `GET /auth/me`
-- **Role Required**: Authenticated (Any)
-- **Headers**: `Authorization: Bearer <token>`
-- **Response** (200 OK): Returns the `user` object.
-- **Errors**: `401 Unauthorized`
+## Tours / Experiences (`/api/travel/tours`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| GET | `/` | No | - | - | `{ data: tours[], pagination: {...} }` |
+| GET | `/:id` | No | - | - | `{ data: tour }` |
+| POST | `/` | Yes | Business | `{ name, destinationId, price... }` | `{ message, data: tour }` |
+| PATCH | `/:id` | Yes | Business/Admin | `{ name?, price?... }` | `{ data: tour }` |
+| DELETE| `/:id` | Yes | Business/Admin | - | `204 No Content` |
 
----
+## General Bookings (`/api/travel/bookings`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| GET | `/` | Yes | Admin | - | `{ data: unifiedBookings[] }` |
+| GET | `/user/:userId`| Yes | Owner/Admin | - | `{ data: unifiedBookings[] }` |
+| POST | `/` | Yes | Any | `{ hotelId, checkIn, checkOut, guests }` | `{ message, data: booking }` |
+| POST | `/:id/cancel`| Yes | Owner/Admin | - | `{ message, data: booking }` |
 
-## 2. Destinations
+## Flight Bookings (`/api/travel/bookings/flights`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| POST | `/` | Yes | Any | `{ flightId, passengers, passengerDetails }`| `{ message, data: flightBooking }` |
 
-### 2.1 Get Destinations
-- **Method**: `GET /destinations`
-- **Role Required**: Public
-- **Query Params**: `page`, `limit`, `search`, `country`, `tags`, `sortBy`, `sortOrder`
-- **Response** (200 OK):
-  ```json
-  {
-    "destinations": [
-      {
-        "id": "uuid",
-        "name": "Paris",
-        "country": "France",
-        "description": "City of lights",
-        "image_url": "url",
-        "tags": ["culture", "romantic"]
-      }
-    ],
-    "pagination": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
-  }
-  ```
-
-### 2.2 Create / Update / Delete Destination
-- **Methods**: 
-  - `POST /destinations`
-  - `PATCH /destinations/:id`
-  - `DELETE /destinations/:id`
-- **Role Required**: `admin`, `business`
-- **Request Body (POST/PATCH)**: Matches the `Destination` object.
-- **Errors**: `403 Forbidden`, `422 Unprocessable Entity`
-
----
-
-## 3. Businesses
-
-### 3.1 Get Businesses
-- **Method**: `GET /businesses`
-- **Role Required**: Public
-- **Query Params**: `user_id`, `page`, `limit`, `search`, `business_type`
-- **Response** (200 OK): Array of Business objects.
-
-### 3.2 Update / Delete Business
-- **Methods**: 
-  - `PATCH /businesses/:id`
-  - `DELETE /businesses/:id`
-- **Role Required**: `admin`, `business` (Must own the business)
-- **Errors**: `403 Forbidden` (Ownership check failed)
-
----
-
-## 4. Hotels & Tours
-
-### 4.1 Get Hotels
-- **Method**: `GET /hotels`
-- **Role Required**: Public
-- **Query Params**: `destinationId`, `search`, `minPrice`, `maxPrice`, `minRating`
-- **Response** (200 OK): Array of Hotel objects.
-
-### 4.2 Get Tours
-- **Method**: `GET /tours`
-- **Role Required**: Public
-- **Query Params**: `destinationId`, `search`, `category`, `minPrice`, `maxPrice`
-- **Response** (200 OK): Array of Tour objects.
-
-### 4.3 Manage Hotels & Tours
-- **Methods**: `POST`, `PATCH /:id`, `DELETE /:id` across `/hotels` and `/tours`.
-- **Role Required**: `admin`, `business` (Must own the associated business).
-- **Errors**: `403 Forbidden` (Ownership check failed), `422 Unprocessable Entity`.
-
----
-
-## 5. Bookings (Hotels & Guides)
-
-### 5.1 Create Booking
-- **Method**: `POST /bookings` (Hotels) | `POST /guide-bookings` (Tours)
-- **Role Required**: Authenticated (Any)
-- **Request Body (Hotels)**:
-  ```json
-  {
-    "hotel_id": "uuid",
-    "check_in_date": "2026-10-01",
-    "check_out_date": "2026-10-05",
-    "guests": 2,
-    "rooms": 1,
-    "total_price": 400
-  }
-  ```
-- **Errors**: `409 Conflict` (Duplicate active booking detected for exact same date/resource)
-
-### 5.2 Get User / Business Bookings
-- **Methods**: 
-  - `GET /bookings/user/:userId`
-  - `GET /bookings/business/:businessId`
-- **Role Required**: Authenticated (Must match `userId` or own `businessId`)
-
-### 5.3 Update Booking Status
-- **Method**: `PATCH /bookings/:id/status`
-- **Role Required**: `admin`, `business` (Must own the associated hotel/tour)
-- **Request Body**: `{ "status": "confirmed" | "cancelled" }`
-
----
-
-## 6. Reviews
-
-### 6.1 Get Reviews
-- **Method**: `GET /reviews`
-- **Query Params**: `hotel_id` OR `tour_id`
-- **Response** (200 OK): Array of review objects with populated `user` (id, name).
-
-### 6.2 Create / Update / Delete Review
-- **Methods**: 
-  - `POST /reviews`
-  - `PATCH /reviews/:id`
-  - `DELETE /reviews/:id`
-- **Role Required**: Authenticated (Must own the review for PATCH/DELETE)
-- **Request Body (POST)**:
-  ```json
-  {
-    "hotel_id": "uuid", // XOR tour_id
-    "rating": 5,
-    "comment": "Amazing experience!"
-  }
-  ```
-- **Errors**: `409 Conflict` (User already reviewed this resource), `403 Forbidden` (Not the author).
-
----
-
-## 7. AI Itineraries
-
-### 7.1 Generate Itinerary
-- **Method**: `POST /itineraries/generate`
-- **Role Required**: Optional Auth (Saved to DB with `user_id` if token provided)
-- **Rate Limit**: 5 per hour per IP.
-- **Request Body**: `{ "prompt": "3 days in Paris..." }`
-- **Response** (201 Created):
-  ```json
-  {
-    "message": "Itinerary generated successfully",
-    "itinerary": {
-      "destination": "Paris",
-      "estimated_budget": "$1500",
-      "ai_recommendations": ["Eat croissants"],
-      "days": [{ "day": 1, "title": "Arrival", "activities": [] }]
-    }
-  }
-  ```
-
-### 7.2 Get Past Itineraries
-- **Methods**: 
-  - `GET /itineraries/user/:userId` (Must be the user or admin)
-  - `GET /itineraries/:id` (Must be the creator or admin)
-- **Errors**: `403 Forbidden`
+## Itineraries (`/api/itineraries`)
+| Method | Path | Auth Required | Role | Request Body | Response Shape |
+|---|---|---|---|---|---|
+| POST | `/generate`| Optional | - | `{ destination, days, budget, travelers, prompt }`| `{ data: { itinerary } }` (AI generated) |
+| POST | `/` | Yes | Any | `{ name, prompt, destination, days... }` | `{ message, data: itinerary }` |
+| GET | `/user/:userId`| Yes | Owner/Admin | - | `{ data: itineraries[] }` |
+| GET | `/:id` | Optional | - | - | `{ data: itinerary }` |
+| PATCH | `/:id` | Yes | Owner/Admin | `{ name?, isPublic?... }` | `{ data: itinerary }` |
+| DELETE| `/:id` | Yes | Owner/Admin | - | `204 No Content` |
+| POST | `/:id/duplicate`| Yes | Any | - | `{ message, data: newItinerary }` |

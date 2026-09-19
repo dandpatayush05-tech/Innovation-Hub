@@ -1,28 +1,6 @@
-import api from './axios';
-
-export interface Hotel {
-  id: string;
-  business_id: string;
-  destination_id: string;
-  name: string;
-  description: string;
-  price_per_night: number;
-  amenities?: string[];
-  rating?: number;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface HotelsResponse {
-  data: Hotel[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+import api from '../lib/axios';
+import { Hotel, HotelsResponse } from '../types/hotel';
+export * from '../types/hotel';
 
 export interface GetHotelsParams {
   page?: number;
@@ -38,6 +16,22 @@ export interface GetHotelsParams {
 
 export const getHotels = async (params?: GetHotelsParams): Promise<HotelsResponse> => {
   const response = await api.get('/hotels', { params });
+  return response.data;
+};
+
+export interface GetNearbyHotelsParams {
+  latitude: number;
+  longitude: number;
+  radius?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number;
+  page?: number;
+  limit?: number;
+}
+
+export const getNearbyHotels = async (params: GetNearbyHotelsParams): Promise<HotelsResponse> => {
+  const response = await api.get('/hotels/nearby', { params });
   return response.data;
 };
 

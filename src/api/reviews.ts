@@ -1,4 +1,4 @@
-import api from './axios';
+import api from '../lib/axios';
 import type { User } from '../context/AuthContext';
 
 export interface Review {
@@ -10,6 +10,7 @@ export interface Review {
   comment: string;
   created_at: string;
   updated_at: string;
+  verified?: boolean;
   user?: Pick<User, 'id' | 'name'>;
 }
 

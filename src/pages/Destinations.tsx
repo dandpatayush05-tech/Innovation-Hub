@@ -1,37 +1,41 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { getDestinations } from '../api/destinations';
 import type { Destination } from '../api/destinations';
+import { LoadingState } from '../components/states/LoadingState';
+import { EmptyState } from '../components/states/EmptyState';
+import { ErrorState } from '../components/states/ErrorState';
+import { DestinationCardSkeleton } from '../components/skeletons/DestinationCardSkeleton';
 
 export const Destinations = () => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 9;
 
-  // Debounce search
+  // Reset page when debounced search changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setPage(1); // Reset to page 1 on new search
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+    setPage(1);
+  }, [debouncedSearch]);
 
   const fetchDestinations = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await getDestinations({ page, limit, search: debouncedSearch });
       setDestinations(res.data);
       setTotalPages(res.pagination.totalPages);
-    } catch (error) {
-      console.error('Failed to fetch destinations:', error);
+    } catch (err) {
+      console.error('Failed to fetch destinations:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -84,15 +88,16 @@ export const Destinations = () => {
       <section className="px-6 max-w-[1360px] mx-auto min-h-[500px]">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-gray-100 rounded-[32px] overflow-hidden h-[450px] animate-pulse border border-black/5" />
-            ))}
+            {[1, 2, 3, 4, 5, 6].map(i => <DestinationCardSkeleton key={i} />)}
           </div>
+        ) : error ? (
+          <ErrorState error={error} onRetry={fetchDestinations} className="my-12" />
         ) : destinations.length === 0 ? (
-          <div className="text-center py-20 bg-white border border-black/5 rounded-3xl">
-            <h3 className="text-2xl font-medium text-[var(--color-vstara-text)] mb-2">No destinations found</h3>
-            <p className="text-[var(--color-vstara-muted)]">Try adjusting your search criteria.</p>
-          </div>
+          <EmptyState 
+            title="No destinations found" 
+            message="We couldn't find any destinations matching your search. Try adjusting your keywords." 
+            className="my-12"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {destinations.map((dest) => (

@@ -1,55 +1,31 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
-import { AuthRequest, isOwnerOrAdmin } from '../middleware/authGuard';
+import * as tourService from '../services/tourService';
+import { AuthRequest } from '../middleware/authGuard';
+import { isOwnerOrAdmin } from '../middleware/requireRole';
+import { ApiError, ForbiddenError, NotFoundError } from '../utils/ApiError';
 
 export const getTours = async (req: Request, res: Response) => {
-  // Pagination
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
-  const offset = (page - 1) * limit;
-
-  let query = supabase.from('tours').select('*', { count: 'exact' });
   
-  if (req.query.destinationId) {
-    query = query.eq('destination_id', req.query.destinationId as string);
-  }
-  
-  // Search by name or description
-  if (req.query.search) {
-    const searchParam = req.query.search as string;
-    query = query.or(`name.ilike.%${searchParam}%,description.ilike.%${searchParam}%`);
-  }
-
-  // Filter by category
-  if (req.query.category) {
-    query = query.eq('category', req.query.category as string);
-  }
-
-  // Filter by price
-  if (req.query.minPrice) {
-    query = query.gte('price', parseFloat(req.query.minPrice as string));
-  }
-  if (req.query.maxPrice) {
-    query = query.lte('price', parseFloat(req.query.maxPrice as string));
-  }
-
-  // Filter by availability
-  if (req.query.minAvailability) {
-    query = query.gte('availability', parseInt(req.query.minAvailability as string));
-  }
-
-  // Sorting
   const sort = (req.query.sort as string) || 'created_at';
-  const order = (req.query.order as string) === 'asc' ? true : false; // default desc
-  query = query.order(sort, { ascending: order });
+  const order = (req.query.order as string) === 'asc' ? true : false;
 
-  // Apply pagination
-  query = query.range(offset, offset + limit - 1);
-
-  const { data: tours, count, error } = await query;
+  const { data: tours, count, error } = await tourService.listTours({
+    page,
+    limit,
+    destinationId: req.query.destinationId as string | undefined,
+    search: req.query.search as string | undefined,
+    category: req.query.category as string | undefined,
+    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+    minAvailability: req.query.minAvailability ? parseInt(req.query.minAvailability as string) : undefined,
+    sort,
+    order
+  });
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to fetch tours', details: error.message } });
+    throw new ApiError(500, 'Failed to fetch tours', 'INTERNAL_ERROR', error.message);
   }
 
   const total = count || 0;
@@ -67,18 +43,20 @@ export const getTours = async (req: Request, res: Response) => {
 };
 
 export const getTour = async (req: Request, res: Response) => {
-  const { data: tour, error } = await supabase.from('tours').select('*').eq('id', req.params.id).single();
+  const { data: tour, error } = await tourService.getTourById(req.params.id as string);
   
-  if (error || !tour) return res.status(404).json({ error: { message: 'Tour not found' } });
+  if (error || !tour) {
+    throw new NotFoundError('Tour not found', undefined);
+  }
+  
   res.json({ data: tour });
 };
 
 export const createTour = async (req: AuthRequest, res: Response) => {
-  // Verify the user owns a business
-  const { data: business } = await supabase.from('businesses').select('*').eq('user_id', req.user?.id).single();
+  const { data: business } = await tourService.getBusinessByUserId(req.user?.id as string);
   
   if (!business) {
-    return res.status(403).json({ error: { message: 'You must register a business before creating a tour' } });
+    throw new ForbiddenError('You must register a business before creating a tour', undefined);
   }
 
   const payload = { ...req.body };
@@ -94,50 +72,28 @@ export const createTour = async (req: AuthRequest, res: Response) => {
     payload.image_url = payload.imageUrl;
     delete payload.imageUrl;
   }
-
   payload.business_id = business.id;
 
-  const { data: tour, error } = await supabase
-    .from('tours')
-    .insert(payload)
-    .select()
-    .single();
+  const { data: tour, error } = await tourService.createTourRecord(payload);
     
   if (error || !tour) {
-    return res.status(500).json({ error: { message: 'Failed to create tour', details: error?.message } });
+    throw new ApiError(500, 'Failed to create tour', 'INTERNAL_ERROR', error?.message);
   }
 
   res.status(201).json({ message: 'Tour created successfully', data: tour });
 };
 
 export const updateTour = async (req: AuthRequest, res: Response) => {
-  // Fetch existing tour to check business_id
-  const { data: existingTour, error: fetchError } = await supabase
-    .from('tours')
-    .select('business_id')
-    .eq('id', req.params.id)
-    .single();
+  const { ownerId, error: checkError } = await tourService.getBusinessOwnerByTourId(req.params.id as string);
 
-  if (fetchError || !existingTour) {
-    return res.status(404).json({ error: { message: 'Tour not found' } });
+  if (checkError || !ownerId) {
+    throw new NotFoundError('Tour or associated business not found', undefined);
   }
 
-  // Fetch the business to check ownership
-  const { data: existingBusiness, error: businessError } = await supabase
-    .from('businesses')
-    .select('user_id')
-    .eq('id', existingTour.business_id)
-    .single();
-
-  if (businessError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Associated business not found' } });
+  if (!isOwnerOrAdmin(req.user!, ownerId)) {
+    throw new ForbiddenError('Forbidden: You do not own this tour', undefined);
   }
 
-  if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this tour' } });
-  }
-
-  // Map camelCase to snake_case for DB
   const updateData: Record<string, unknown> = {};
   if (req.body.name) updateData.name = req.body.name;
   if (req.body.description !== undefined) updateData.description = req.body.description;
@@ -148,54 +104,30 @@ export const updateTour = async (req: AuthRequest, res: Response) => {
   if (req.body.availability !== undefined) updateData.availability = req.body.availability;
   if (req.body.imageUrl) updateData.image_url = req.body.imageUrl;
 
-  const { data: tour, error } = await supabase
-    .from('tours')
-    .update(updateData)
-    .eq('id', req.params.id)
-    .select()
-    .single();
+  const { data: tour, error } = await tourService.updateTourRecord(req.params.id as string, updateData);
 
   if (error || !tour) {
-    return res.status(500).json({ error: { message: 'Failed to update tour', details: error?.message } });
+    throw new ApiError(500, 'Failed to update tour', 'INTERNAL_ERROR', error?.message);
   }
 
   res.json({ data: tour });
 };
 
 export const deleteTour = async (req: AuthRequest, res: Response) => {
-  // Fetch existing tour to check business_id
-  const { data: existingTour, error: fetchError } = await supabase
-    .from('tours')
-    .select('business_id')
-    .eq('id', req.params.id)
-    .single();
+  const { ownerId, error: checkError } = await tourService.getBusinessOwnerByTourId(req.params.id as string);
 
-  if (fetchError || !existingTour) {
-    return res.status(404).json({ error: { message: 'Tour not found' } });
+  if (checkError || !ownerId) {
+    throw new NotFoundError('Tour or associated business not found', undefined);
   }
 
-  // Fetch the business to check ownership
-  const { data: existingBusiness, error: businessError } = await supabase
-    .from('businesses')
-    .select('user_id')
-    .eq('id', existingTour.business_id)
-    .single();
-
-  if (businessError || !existingBusiness) {
-    return res.status(404).json({ error: { message: 'Associated business not found' } });
+  if (!isOwnerOrAdmin(req.user!, ownerId)) {
+    throw new ForbiddenError('Forbidden: You do not own this tour', undefined);
   }
 
-  if (!isOwnerOrAdmin(req.user!, existingBusiness.user_id)) {
-    return res.status(403).json({ error: { message: 'Forbidden: You do not own this tour' } });
-  }
-
-  const { error } = await supabase
-    .from('tours')
-    .delete()
-    .eq('id', req.params.id);
+  const { error } = await tourService.deleteTourRecord(req.params.id as string);
 
   if (error) {
-    return res.status(500).json({ error: { message: 'Failed to delete tour', details: error.message } });
+    throw new ApiError(500, 'Failed to delete tour', 'INTERNAL_ERROR', error.message);
   }
 
   res.status(204).send();

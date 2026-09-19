@@ -1,9 +1,7 @@
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { env } from '../config/env';
 
-const openai = new OpenAI({
-  apiKey: env.LLM_API_KEY
-});
+const ai = new GoogleGenAI({ apiKey: env.LLM_API_KEY });
 
 const systemPrompt = `
 You are an expert travel planner. The user will provide a prompt describing their travel plans.
@@ -31,16 +29,17 @@ DO NOT wrap the response in markdown blocks like \`\`\`json. DO NOT include any 
 
 export const generateItineraryWithLLM = async (prompt: string, retries = 1): Promise<any> => {
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.7,
+        responseMimeType: 'application/json'
+      }
     });
 
-    const content = response.choices[0]?.message?.content || '{}';
+    const content = response.text || '{}';
     return JSON.parse(content.trim());
   } catch (_error) {
     console.error(_error);
@@ -48,6 +47,6 @@ export const generateItineraryWithLLM = async (prompt: string, retries = 1): Pro
       console.log('LLM generation failed, retrying...');
       return generateItineraryWithLLM(prompt, retries - 1);
     }
-    throw new Error('Failed to generate valid itinerary from AI');
+    throw new Error('Failed to generate valid itinerary from AI', { cause: _error });
   }
 };
