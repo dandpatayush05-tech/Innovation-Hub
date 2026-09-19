@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
 
@@ -84,7 +84,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
   let conversationId = req.params.id;
-  const { content, recipient_id, business_id } = req.body;
+  const { content, business_id } = req.body;
   const senderId = req.user!.id;
 
   // If conversationId is 'new', we need to find or create the conversation

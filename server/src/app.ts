@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -68,7 +68,8 @@ app.get('/api/health', async (req, res) => {
     const { error } = await supabase.from('users').select('id').limit(1);
     if (error) throw error;
     res.json({ success: true, status: 'healthy', uptime: process.uptime() });
-  } catch (err) {
+  } catch (_err) {
+    console.error(_err);
     res.status(503).json({ success: false, status: 'unhealthy' });
   }
 });

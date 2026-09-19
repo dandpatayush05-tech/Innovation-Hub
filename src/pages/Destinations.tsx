@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, ChevronLeft, ChevronRight, Loader2, ArrowRight } from 'lucide-react';
+import { Search, MapPin, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { getDestinations } from '../api/destinations';
 import type { Destination } from '../api/destinations';
 

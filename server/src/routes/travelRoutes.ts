@@ -10,7 +10,7 @@ import { getFlights, getFlight, createFlightBooking } from '../controllers/fligh
 import { getBuses, getBus, createBusBooking } from '../controllers/busController';
 import { createAutoBooking, getUserAutoBookings } from '../controllers/autoController';
 import { validate } from '../middleware/validate';
-import { createBusinessSchema, createHotelSchema, createBookingSchema, updateBookingStatusSchema, createGuideBookingSchema, createContactSchema, createDestinationSchema, updateDestinationSchema, updateBusinessSchema, updateHotelSchema, createTourSchema, updateTourSchema, createReviewSchema, updateReviewSchema, createFlightBookingSchema, createBusBookingSchema, createAutoBookingSchema } from '../validators/travelValidator';
+import { createBusinessSchema, createHotelSchema, createBookingSchema, createGuideBookingSchema, createContactSchema, createDestinationSchema, updateDestinationSchema, updateBusinessSchema, updateHotelSchema, createTourSchema, updateTourSchema, createReviewSchema, updateReviewSchema, createFlightBookingSchema, createBusBookingSchema, createAutoBookingSchema } from '../validators/travelValidator';
 import { authGuard, requireRole } from '../middleware/authGuard';
 import { asyncWrapper } from '../utils/asyncWrapper';
 import { createRazorpayOrder, verifyRazorpaySignature } from '../controllers/paymentController';

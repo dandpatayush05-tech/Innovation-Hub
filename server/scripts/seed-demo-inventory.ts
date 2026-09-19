@@ -128,7 +128,7 @@ async function seed() {
       }
     ];
 
-    const { data: insertedDestinations, error: destError } = await supabase
+    await supabase
       .from('destinations')
       .upsert(destinations, { onConflict: 'name' }) // this requires a unique constraint, but we don't have one on name. 
       // Instead we will just insert if table is empty

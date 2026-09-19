@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getReviews, createReview, deleteReview } from '../api/reviews';
 import type { Review } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
@@ -24,17 +24,7 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchReviews();
-      // Reset form
-      setRating(5);
-      setComment('');
-      setError('');
-    }
-  }, [isOpen, hotelId, tourId]);
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getReviews({ hotel_id: hotelId, tour_id: tourId });
@@ -44,7 +34,17 @@ export function ReviewsModal({ isOpen, onClose, hotelId, tourId, title }: Review
     } finally {
       setLoading(false);
     }
-  };
+  }, [hotelId, tourId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchReviews();
+      // Reset form
+      setRating(5);
+      setComment('');
+      setError('');
+    }
+  }, [isOpen, fetchReviews]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

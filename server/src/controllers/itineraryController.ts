@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { generateItineraryWithLLM } from '../services/llm';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
@@ -132,7 +132,7 @@ export const duplicateItinerary = async (req: AuthRequest, res: Response) => {
   const cleanedDays = (existing.days || []).map((day: any) => ({
     ...day,
     activities: (day.activities || []).map((act: any) => {
-      const { booking_id, ...rest } = act;
+      const { booking_id: _booking_id, ...rest } = act;
       return { ...rest, booking_status: 'planned' };
     })
   }));

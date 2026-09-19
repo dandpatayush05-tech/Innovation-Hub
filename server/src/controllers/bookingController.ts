@@ -1,21 +1,32 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middleware/authGuard';
 import { createNotification } from './notificationController';
 
 export const getUnifiedBookings = async (req: AuthRequest, res: Response) => {
-  const { data: bookings, error } = await supabase
-    .from('unified_bookings')
-    .select('*')
-    .eq('user_id', req.user?.id)
-    .order('created_at', { ascending: false });
+  const [
+    { data: hotels },
+    { data: flights },
+    { data: buses },
+    { data: autos },
+    { data: guides }
+  ] = await Promise.all([
+    supabase.from('bookings').select('id, user_id, status, created_at, hotel_id, check_in, check_out, guests').eq('user_id', req.user?.id),
+    supabase.from('flight_bookings').select('id, user_id, status, created_at, flight_id, travel_date, seats').eq('user_id', req.user?.id),
+    supabase.from('bus_bookings').select('id, user_id, status, created_at, bus_id, travel_date, seats').eq('user_id', req.user?.id),
+    supabase.from('auto_bookings').select('id, user_id, status, created_at, auto_id, booking_date, pickup_location, dropoff_location').eq('user_id', req.user?.id),
+    supabase.from('guide_bookings').select('id, user_id, status, created_at, business_id, date, notes').eq('user_id', req.user?.id)
+  ]);
 
-  if (error) {
-    console.error('Error fetching unified bookings:', error);
-    return res.status(500).json({ error: { message: 'Failed to fetch bookings' } });
-  }
+  const allBookings = [
+    ...(hotels || []).map(b => ({ ...b, type: 'hotel', title: 'Hotel Booking', date: b.check_in })),
+    ...(flights || []).map(b => ({ ...b, type: 'flight', title: 'Flight Booking', date: b.travel_date })),
+    ...(buses || []).map(b => ({ ...b, type: 'bus', title: 'Bus Booking', date: b.travel_date })),
+    ...(autos || []).map(b => ({ ...b, type: 'auto', title: 'Auto Booking', date: b.booking_date })),
+    ...(guides || []).map(b => ({ ...b, type: 'experience', title: 'Experience Booking', date: b.date }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  res.json({ bookings: bookings || [] });
+  res.json({ bookings: allBookings });
 };
 
 export const cancelBooking = async (req: AuthRequest, res: Response) => {
@@ -61,7 +72,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
-  const { hotel_id, check_in_date, check_out_date, guests, rooms, total_price, occasion } = req.body;
+  const { hotel_id, check_in_date, check_out_date, guests, occasion } = req.body;
 
   const { data: booking, error } = await supabase
     .from('bookings')

@@ -22,7 +22,7 @@ export const createNotification = async (
         }
       ]);
 
-    if (error) {
+    if (error && error.code !== 'PGRST205') {
       console.error('Error creating notification:', error);
     }
   } catch (err) {
@@ -44,6 +44,9 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
     .limit(50);
 
   if (error) {
+    if (error.code === 'PGRST205') {
+      return res.json({ notifications: [] });
+    }
     return res.status(400).json({ error: { message: error.message } });
   }
 

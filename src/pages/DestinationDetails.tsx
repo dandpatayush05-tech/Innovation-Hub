@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  MapPin, Loader2, ArrowLeft, Building, Compass, Star, 
+  MapPin, ArrowLeft, Building, Compass, Star, 
   Heart, Plane, Bus, Car, Calendar, DollarSign, Info
 } from 'lucide-react';
 import { getDestination } from '../api/destinations';
-import type { Destination, IntelligenceData } from '../api/destinations';
+import type { Destination } from '../api/destinations';
 import { getHotels } from '../api/hotels';
 import type { Hotel } from '../api/hotels';
 import { getTours } from '../api/tours';

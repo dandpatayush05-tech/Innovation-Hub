@@ -42,7 +42,8 @@ export const generateItineraryWithLLM = async (prompt: string, retries = 1): Pro
 
     const content = response.choices[0]?.message?.content || '{}';
     return JSON.parse(content.trim());
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     if (retries > 0) {
       console.log('LLM generation failed, retrying...');
       return generateItineraryWithLLM(prompt, retries - 1);

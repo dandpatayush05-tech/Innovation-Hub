@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Bookings = () => {
-  const { user } = useAuth();
+  useAuth();
   const [bookings, setBookings] = useState<UnifiedBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>('All');

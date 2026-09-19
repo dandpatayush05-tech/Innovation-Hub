@@ -46,7 +46,8 @@ export const getBuses = async (req: Request, res: Response) => {
         totalPages: Math.ceil((count || 0) / Number(limit))
       }
     });
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     res.status(500).json({ error: 'Failed to fetch buses' });
   }
 };
@@ -86,7 +87,8 @@ export const getBus = async (req: Request, res: Response) => {
     }
 
     res.json({ data: { ...bus, bookedSeats } });
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     res.status(500).json({ error: 'Failed to fetch bus' });
   }
 };

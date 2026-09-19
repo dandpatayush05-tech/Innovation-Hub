@@ -20,7 +20,7 @@ const seedDatabase = async () => {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash('password123', salt);
     
-    const { data: travelerData, error: travelerError } = await supabase.from('users').insert({
+    const { error: travelerError } = await supabase.from('users').insert({
       name: 'Alex Traveler',
       email: 'alex@example.com',
       password_hash,

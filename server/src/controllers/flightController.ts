@@ -51,7 +51,8 @@ export const getFlights = async (req: Request, res: Response) => {
         totalPages: Math.ceil((count || 0) / Number(limit))
       }
     });
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     res.status(500).json({ error: 'Failed to fetch flights' });
   }
 };
@@ -91,7 +92,8 @@ export const getFlight = async (req: Request, res: Response) => {
     }
 
     res.json({ data: { ...data, bookedSeats } });
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     res.status(500).json({ error: 'Failed to fetch flight' });
   }
 };

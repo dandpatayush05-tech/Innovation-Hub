@@ -20,7 +20,8 @@ export const authGuard = (req: AuthRequest, res: Response, next: NextFunction) =
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as { id: string; role: string };
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch (_error) {
+    console.error(_error);
     return res.status(401).json({ error: { message: 'Unauthorized: Invalid or expired token' } });
   }
 };

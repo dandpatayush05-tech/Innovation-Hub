@@ -112,14 +112,25 @@ export const Login = () => {
               )}
             </button>
           </form>
-
           <div className="mt-8 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-[#2A2A2A]/60 hover:text-[#C84B31] transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className="w-full mt-4 bg-white border-2 border-[#C84B31] text-[#C84B31] hover:bg-gray-50 px-6 py-3.5 rounded-full font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 shadow-sm"
+              >
+                Create New Account
+              </button>
+            )}
+            {!isLogin && (
+               <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className="w-full mt-4 bg-white border-2 border-[#C84B31] text-[#C84B31] hover:bg-gray-50 px-6 py-3.5 rounded-full font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 shadow-sm"
+              >
+                Already have an account? Sign In
+              </button>
+            )}
           </div>
         </div>
       </div>

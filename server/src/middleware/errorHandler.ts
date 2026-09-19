@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError';
 import { env } from '../config/env';
 
-export const errorHandler = (err: unknown, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // If the error is a Zod validation error, return 422 Unprocessable Entity
   if (err instanceof ZodError) {
     // We map Zod issues to a cleaner format without exposing internal schema paths unnecessarily, 

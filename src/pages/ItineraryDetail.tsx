@@ -4,8 +4,8 @@ import { getItinerary, updateItinerary, deleteItinerary, duplicateItinerary } fr
 import type { Itinerary, ItineraryDay, ItineraryActivity } from '../api/itineraries';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Sparkles, DollarSign, Clock, Lightbulb, ChevronDown, ChevronUp, Loader2, Lock, ArrowLeft,
-  Edit2, Save, Trash2, Plus, GripVertical, Copy, Share2, MapPin, CheckCircle2, Calendar
+  Sparkles, DollarSign, Clock, ChevronDown, ChevronUp, Loader2, Lock, ArrowLeft,
+  Edit2, Save, Trash2, Plus, Copy, Share2, CheckCircle2
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -62,7 +62,8 @@ export const ItineraryDetail = () => {
         days: itinerary.days
       });
       setEditMode(false);
-    } catch (err) {
+    } catch (_err) {
+      console.error(_err);
       alert('Failed to save itinerary');
     } finally {
       setSaving(false);
@@ -74,7 +75,8 @@ export const ItineraryDetail = () => {
     try {
       await deleteItinerary(itinerary.id);
       navigate('/dashboard/itineraries');
-    } catch (err) {
+    } catch (_err) {
+      console.error(_err);
       alert('Failed to delete itinerary');
     }
   };
@@ -84,7 +86,8 @@ export const ItineraryDetail = () => {
     try {
       const res = await duplicateItinerary(itinerary.id);
       navigate(`/dashboard/itineraries/${res.itinerary.id}`);
-    } catch (err) {
+    } catch (_err) {
+      console.error(_err);
       alert('Failed to duplicate itinerary');
     }
   };

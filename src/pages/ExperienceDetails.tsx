@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getTour, Tour } from '../api/tours';
 import { createGuideBooking } from '../api/bookings';
 import { Checkout } from '../components/Checkout';
-import { Clock, MapPin, Star, Users, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { Clock, MapPin, Star, Calendar as CalendarIcon, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const ExperienceDetails = () => {

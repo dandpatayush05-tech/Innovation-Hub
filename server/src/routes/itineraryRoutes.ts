@@ -26,7 +26,7 @@ const optionalAuth = (req: Request & { user?: { id: string; role: string; email:
     try {
       const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
       req.user = decoded as { id: string; role: string; email: string; name: string };
-    } catch (e) {}
+    } catch (_e) { console.error(_e); }
   }
   next();
 };

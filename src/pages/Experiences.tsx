@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTours, Tour } from '../api/tours';
-import { Search, MapPin, Clock, Star, Filter } from 'lucide-react';
+import { Search, MapPin, Clock } from 'lucide-react';
 
 const CATEGORIES = [
   'All',
