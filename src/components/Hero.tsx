@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import { Upload } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Testimonials } from './Testimonials';
 
 const NavButton = ({ children, to }: { children: React.ReactNode, to?: string }) => {
-  const className = "bg-transparent border-none cursor-pointer font-sans text-[15px] font-medium uppercase text-vstara-text tracking-[0.04em] transition-opacity hover:opacity-55 no-underline";
+  const className = "bg-transparent border border-vstara-text/20 rounded-full px-5 py-2.5 cursor-pointer font-sans text-[15px] font-medium uppercase text-vstara-text tracking-[0.04em] transition-all hover:border-vstara-text/40 hover:bg-black/5 no-underline flex items-center justify-center";
   
   if (to) {
     return <Link to={to} className={className}>{children}</Link>;
@@ -19,9 +19,14 @@ const NavButton = ({ children, to }: { children: React.ReactNode, to?: string })
 
 export const Hero = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handlePlanTripClick = () => {
+    navigate("/login");
   };
 
   return (
@@ -60,12 +65,6 @@ export const Hero = () => {
           </div>
 
           <div className="flex items-center gap-8">
-            <Link to="/login" className="bg-transparent border-none cursor-pointer font-sans text-[15px] font-semibold uppercase text-[#292929] tracking-[0.04em] transition-opacity hover:opacity-55 max-md:hidden">
-              Login
-            </Link>
-            <Link to="/itineraries/generate" className="bg-vstara-dark text-[#fafafa] border-none cursor-pointer font-sans text-[15px] font-medium uppercase tracking-[0.04em] px-5 py-3.5 rounded-full transition-all hover:bg-[#333] active:scale-95 no-underline">
-              Plan My Trip
-            </Link>
           </div>
         </nav>
 
@@ -84,9 +83,9 @@ export const Hero = () => {
               I'm planning a 7-day trip to Japan in October. I love food, hidden cafes, scenic hikes, and want to avoid crowds....
             </p>
 
-            <Link to="/itineraries/generate" className="absolute bottom-[21px] right-[21px] w-[156px] h-14 bg-black border-none rounded-[44px] shadow-[0_0_2px_0_rgba(0,0,0,0.05)] cursor-pointer flex items-center justify-center font-sans text-base font-medium text-[#fafafa] uppercase tracking-[0.02em] transition-all hover:bg-[#333] active:scale-95 no-underline">
+            <button onClick={handlePlanTripClick} className="absolute bottom-[21px] right-[21px] w-[156px] h-14 bg-black border-none rounded-[44px] shadow-[0_0_2px_0_rgba(0,0,0,0.05)] cursor-pointer flex items-center justify-center font-sans text-base font-medium text-[#fafafa] uppercase tracking-[0.02em] transition-all hover:bg-[#333] active:scale-95 no-underline">
               Plan My Trip
-            </Link>
+            </button>
 
             <input 
               ref={fileInputRef} 
@@ -98,9 +97,10 @@ export const Hero = () => {
             <button 
               onClick={handleUploadClick}
               aria-label="Upload inspiration"
-              className="absolute left-[21px] top-[137px] w-11 h-11 bg-transparent border border-white/70 rounded-full cursor-pointer flex items-center justify-center backdrop-blur-[14px] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2"
+              className="absolute left-[21px] bottom-[21px] w-[156px] h-14 bg-black border-none rounded-[44px] shadow-[0_0_2px_0_rgba(0,0,0,0.05)] cursor-pointer flex items-center justify-center font-sans text-base font-medium text-[#fafafa] uppercase tracking-[0.02em] transition-all hover:bg-[#333] active:scale-95 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2"
             >
-              <Upload className="w-[18px] h-[18px] text-vstara-text flex-shrink-0" />
+              <Upload className="w-[18px] h-[18px] mr-2 flex-shrink-0" />
+              Upload
             </button>
           </div>
         </div>

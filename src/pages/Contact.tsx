@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navbar } from '../components/Navbar';
+import { Navbar } from '../components/layout/Navbar';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import api from '../lib/axios';
 import { useToast } from '../context/ToastContext';

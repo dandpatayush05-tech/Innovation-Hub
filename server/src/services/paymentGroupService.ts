@@ -52,8 +52,13 @@ export const buildPaymentGroup = async (userId: string, bookingIds: string[], di
           amount = (bus?.price || 0) * booking.seats;
           label = `Bus: ${bus?.origin} to ${bus?.destination}`;
         } else if (table.type === 'auto') {
-          amount = Number(booking.fare) || 0;
-          label = `Local Transport`;
+          let fare = 500; // Flat deposit in INR
+          if (booking.vehicle_type === 'suv') fare = 800;
+          if (booking.vehicle_type === 'van') fare = 1200;
+          if (booking.vehicle_type === 'auto_rickshaw') fare = 150;
+          
+          amount = fare;
+          label = `Local Transport (${(booking.vehicle_type || 'car').replace('_', ' ')})`;
         }
 
         subtotal += amount;

@@ -6,11 +6,23 @@ import { AuthRequest } from '../middleware/authGuard';
 import crypto from 'crypto';
 import { ApiError, UnauthorizedError, NotFoundError, ConflictError } from '../utils/ApiError';
 
+import { signupSchema, loginSchema, changePasswordSchema, resetPasswordSchema } from '../validators/authValidator';
+import { isPasswordReused, recordPasswordHistory } from '../services/passwordHistoryService';
+import { checkPasswordStrength } from '../utils/passwordStrength';
 
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
-export const register = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+export const register = async (req: Request, res: Response): Promise<any> => {
+  const result = signupSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+  }
+  const { name, email, password } = result.data;
+
+  const strength = checkPasswordStrength(password, { name, email });
+  if (!strength.ok) {
+    return res.status(400).json({ error: { message: 'Password is too weak', details: strength.reasons } });
+  }
 
   const { data: existingUser } = await supabase.from('users').select('id').eq('email', email).single();
   if (existingUser) {
@@ -39,6 +51,8 @@ export const register = async (req: Request, res: Response) => {
 
   setRefreshCookie(res, refreshToken);
 
+  await recordPasswordHistory(user.id, passwordHash);
+
   res.status(201).json({
     message: 'Registration successful',
     accessToken,
@@ -46,8 +60,12 @@ export const register = async (req: Request, res: Response) => {
   });
 };
 
-export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+export const login = async (req: Request, res: Response): Promise<any> => {
+  const result = loginSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+  }
+  const { email, password } = result.data;
 
   const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
   
@@ -147,4 +165,81 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
   }
 
   res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+};
+
+export const changePassword = async (req: AuthRequest, res: Response): Promise<any> => {
+  const result = changePasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+  }
+
+  const { currentPassword, newPassword } = result.data;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new UnauthorizedError('Unauthorized', undefined);
+  }
+
+  const { data: user } = await supabase.from('users').select('name, email, password_hash').eq('id', userId).single();
+  
+  if (!user) {
+    throw new NotFoundError('User not found', undefined);
+  }
+
+  const strength = checkPasswordStrength(newPassword, { name: user.name, email: user.email });
+  if (!strength.ok) {
+    return res.status(400).json({ error: { message: 'Password is too weak', details: strength.reasons } });
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!isMatch) {
+    return res.status(400).json({ error: { message: 'Incorrect current password' } });
+  }
+
+  const reused = await isPasswordReused(userId, newPassword);
+  if (reused) {
+    return res.status(400).json({ error: { message: 'Cannot reuse one of your last 5 passwords' } });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(newPassword, salt);
+
+  await supabase.from('users').update({ password_hash: passwordHash }).eq('id', userId);
+  await recordPasswordHistory(userId, passwordHash);
+
+  res.json({ message: 'Password changed successfully' });
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<any> => {
+  const result = resetPasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+  }
+
+  const { email, newPassword } = result.data;
+
+  const { data: user } = await supabase.from('users').select('id, name, email').eq('email', email).single();
+  
+  if (!user) {
+    // Return generic message to prevent email enumeration
+    return res.json({ message: 'If the email exists, the password has been reset.' });
+  }
+
+  const strength = checkPasswordStrength(newPassword, { name: user.name, email: user.email });
+  if (!strength.ok) {
+    return res.status(400).json({ error: { message: 'Password is too weak', details: strength.reasons } });
+  }
+
+  const reused = await isPasswordReused(user.id, newPassword);
+  if (reused) {
+    return res.status(400).json({ error: { message: 'Cannot reuse one of your last 5 passwords' } });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(newPassword, salt);
+
+  await supabase.from('users').update({ password_hash: passwordHash }).eq('id', user.id);
+  await recordPasswordHistory(user.id, passwordHash);
+
+  res.json({ message: 'If the email exists, the password has been reset.' });
 };

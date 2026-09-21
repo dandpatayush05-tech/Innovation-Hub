@@ -3,17 +3,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../lib/axios';
-import { Plane, ArrowRight, Loader2 } from 'lucide-react';
+import { Plane, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { loginSchema, registerSchema } from '../lib/validations';
+import { loginSchema, signupSchema as registerSchema } from '../schemas/authSchema';
 import { FieldError } from '../components/FieldError';
+import { PasswordStrength } from '../components/PasswordStrength';
+import { LandingBackgroundScene } from '../components/LandingBackgroundScene';
 
 export const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
@@ -21,6 +24,7 @@ export const Login = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset
   } = useForm({
@@ -57,7 +61,8 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center items-center px-4">
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center items-center px-4 relative z-0">
+      <LandingBackgroundScene />
       {/* Yatra Setu Logo */}
       <Link to="/" className="absolute top-8 left-8 flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity">
         <Plane className="w-8 h-8" />
@@ -110,15 +115,30 @@ export const Login = () => {
 
             <div>
               <label className="block text-sm font-medium text-[#2A2A2A] mb-1.5">Password</label>
-              <input
-                type="password"
-                {...register('password')}
-                className={`w-full px-4 py-3 rounded-xl border focus:ring-1 outline-none transition-colors bg-black/5 focus:bg-white ${
-                  errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-black/10 focus:border-[#C84B31] focus:ring-[#C84B31]'
-                }`}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-1 outline-none transition-colors bg-black/5 focus:bg-white pr-12 ${
+                    errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-black/10 focus:border-[#C84B31] focus:ring-[#C84B31]'
+                  }`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
               <FieldError error={errors.password?.message as string} />
+              {!isLogin && (
+                <PasswordStrength 
+                  password={watch('password')} 
+                  userInputs={[watch('name'), watch('email')].filter(Boolean)} 
+                />
+              )}
             </div>
 
             <button

@@ -195,6 +195,8 @@ export const Dashboard = () => {
                       navigate(`/dashboard/buses?source=${encodeURIComponent(src)}&destination=${encodeURIComponent(dst)}`);
                     } else if (activeTab === 'Auto') {
                       navigate(`/dashboard/auto`);
+                    } else if (activeTab === 'Experiences') {
+                      navigate(`/experiences?q=${encodeURIComponent(searchQuery)}`);
                     }
                   }}
                   className="w-full md:w-auto bg-[#C84B31] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#A63A25] transition-colors"

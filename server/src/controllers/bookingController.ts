@@ -3,6 +3,7 @@ import * as bookingService from '../services/bookingService';
 import { AuthRequest } from '../middleware/authGuard';
 import { createNotification } from './notificationController';
 import { ApiError, BadRequestError, ForbiddenError } from '../utils/ApiError';
+import { supabase } from '../config/supabase';
 
 export const getUnifiedBookings = async (req: AuthRequest, res: Response) => {
   const allBookings = await bookingService.getUnifiedBookingsByUser(req.user?.id as string);
@@ -102,6 +103,51 @@ export const getUserGuideBookings = async (req: AuthRequest, res: Response) => {
 
   if (error) {
     throw new ApiError(500, 'Failed to fetch guide bookings', 'INTERNAL_ERROR', undefined);
+  }
+
+  res.json({ bookings: bookings || [] });
+};
+
+export const createAutoBooking = async (req: AuthRequest, res: Response) => {
+  const { start_date, pickup_location, dropoff_location, passenger_count, vehicle_type, additional_instructions } = req.body;
+
+  // For generic transport requests without a specific auto_id, we need a default business_id
+  let { data: business } = await supabase.from('businesses').select('id').limit(1).maybeSingle();
+  
+  if (!business) {
+    // Fallback: create a system default transport business
+    const { data: newBusiness, error: bErr } = await supabase.from('businesses').insert({ name: 'System Default Transport', type: 'transport' }).select('id').single();
+    if (bErr || !newBusiness) {
+      throw new ApiError(500, 'No transport businesses available to assign', 'INTERNAL_ERROR', undefined);
+    }
+    business = newBusiness;
+  }
+
+  const { data: booking, error } = await bookingService.createAutoBookingRecord({
+    user_id: req.user?.id,
+    business_id: business.id,
+    start_date,
+    pickup_location,
+    dropoff_location,
+    passenger_count,
+    vehicle_type,
+    additional_instructions,
+    status: 'pending'
+  });
+
+  if (error) {
+    console.error('Supabase error inserting auto booking:', error);
+    throw new ApiError(500, 'Failed to create auto booking', 'INTERNAL_ERROR', error.message);
+  }
+
+  res.status(201).json({ booking, message: 'Auto booking created successfully' });
+};
+
+export const getUserAutoBookings = async (req: AuthRequest, res: Response) => {
+  const { data: bookings, error } = await bookingService.getAutoBookingsByUser(req.user?.id as string);
+
+  if (error) {
+    throw new ApiError(500, 'Failed to fetch auto bookings', 'INTERNAL_ERROR', undefined);
   }
 
   res.json({ bookings: bookings || [] });

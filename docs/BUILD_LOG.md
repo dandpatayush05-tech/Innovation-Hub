@@ -998,3 +998,37 @@ otifications_log\ table for tracking SMS sent/failed events.
 - Created \server/scripts/seedHelpContent.ts\ script.
 - Seeded initial FAQ and policies aligning completely with Phase 8/12 functionality (tiered cancellations, refund routing, Razorpay payment flows).
 - Verified correct insertion of articles mapping to their parent \help_categories\ slugs.
+
+## [Auth Update] 2026-09-21 - Zod Schema Enhancement
+- Updated `server/src/validators/authValidator.ts` with strict Zod schemas for signup and login (regex for name, email, and password complexity).
+- Rewired `server/src/controllers/authController.ts` to use `safeParse` directly inside the route handlers and return a 400 Bad Request with detailed Zod errors on failure, replacing the previous inline validation middleware in `authRoutes.ts`.
+
+## [Auth Update] 2026-09-21 - Password History & Restrictions
+- Created Supabase migration `013_password_history.sql` for `password_history` table with `user_id` index.
+- Implemented `passwordHistoryService.ts` containing `isPasswordReused` and `recordPasswordHistory` logic (keeping only the last 5 hashes).
+- Updated `authController.ts` and `authRoutes.ts` to include new `changePassword` and `resetPassword` endpoints which enforce the password reuse restriction and record new passwords in the history.
+- Wired `recordPasswordHistory` into the initial signup (`register`) route.
+
+## [Auth Update] 2026-09-21 - Zxcvbn Password Strength Integration
+- Installed `@zxcvbn-ts/core`, `@zxcvbn-ts/language-common`, and `@zxcvbn-ts/language-en` packages in the server environment.
+- Created `server/src/utils/passwordStrength.ts` which exposes `checkPasswordStrength` to calculate Zxcvbn scores using user-provided personal details (name, email) and enforces a minimum score of 3. It also performs direct substring rejection if the password contains any of the personal info strings.
+- Wired this utility into the `register`, `changePassword`, and `resetPassword` routes inside `authController.ts`, ensuring it runs alongside the existing Regex constraints and surfaces detailed Zxcvbn feedback to the client on a 400 Bad Request error.
+
+## [Auth Update] 2026-09-21 - Frontend Zxcvbn Integration
+- Installed `@zxcvbn-ts/core`, `@zxcvbn-ts/language-common`, and `@zxcvbn-ts/language-en` packages in the frontend.
+- Created `src/schemas/authSchema.ts` to mirror the backend Zod validation logic, incorporating a `.superRefine()` step that validates password strength using Zxcvbn and checks for substring personal info inclusion.
+- Updated `src/pages/Login.tsx` to consume the new `authSchema.ts` via `react-hook-form` and `zodResolver`.
+- Created and integrated a live `PasswordStrength` visual indicator component that updates in real-time as the user types their password, driven by the Zxcvbn score.
+
+## [Auth Update] 2026-09-21 - Auth Validation Unit Tests
+- Added comprehensive unit tests in `server/src/__tests__/authValidation.test.ts` using Jest.
+- Covered `nameSchema` (rejecting digits/symbols/incorrect lengths), `emailSchema` (validating TLDs and formats), and `passwordSchema` (enforcing complexity rules).
+- Covered `checkPasswordStrength` to verify it rejects sequential patterns, leetspeak, dictionary words, and personal information substrings.
+- Covered `isPasswordReused` by mocking Supabase and bcrypt to verify it accurately detects previously used passwords in the history.
+
+## [Update] 2026-09-21 - Hero Navigation Updates
+
+### 1. Navigation Flow Update
+- Removed the standalone 'Login' button from the navigation bar in `src/components/Hero.tsx`.
+- Wired both 'Plan My Trip' buttons (in the nav bar and the prompt card) to navigate directly to the `/login` route using `useNavigate` from React Router.
+- Verified that the `/login` route is correctly registered in `src/App.tsx`.

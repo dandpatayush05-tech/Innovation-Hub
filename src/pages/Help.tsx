@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/axios';
 import { Loader2, Search, HelpCircle, BookOpen, XCircle, Banknote, CreditCard, FileText, Shield, Mail } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { Navbar } from '../components/layout/Navbar';
 import { FaqAccordion } from '../components/help/FaqAccordion';
 import { PolicyPage } from '../components/help/PolicyPage';
 
