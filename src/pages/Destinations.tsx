@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Search, MapPin, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { getDestinations } from '../api/destinations';
 import type { Destination } from '../api/destinations';
-import { LoadingState } from '../components/states/LoadingState';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 import { DestinationCardSkeleton } from '../components/skeletons/DestinationCardSkeleton';

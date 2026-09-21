@@ -34,7 +34,7 @@ export const Contact = () => {
     return () => window.removeEventListener('preselect-interest', handlePreselect as EventListener);
   }, [setValue]);
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (_data: any) => {
     // We aren't doing actual submission yet, just state update
     setIsSubmitted(true);
   };

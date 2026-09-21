@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PaymentSummary } from './payments/PaymentSummary';
 
 interface CheckoutProps {
@@ -12,7 +12,7 @@ interface CheckoutProps {
 
 export const Checkout: React.FC<CheckoutProps> = ({ 
   bookingId, 
-  bookingType, 
+  _bookingType, 
   bookingIds, 
   discountCode,
   onSuccess, 

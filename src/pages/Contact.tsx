@@ -16,7 +16,7 @@ export const Contact = () => {
       await api.post('/api/help/contact', formData);
       success('Your message has been sent successfully. We will get back to you soon.');
       setFormData({ name: '', email: '', message: '' });
-    } catch (err) {
+    } catch {
       error('Failed to send message. Please try again.');
     } finally {
       setLoading(false);

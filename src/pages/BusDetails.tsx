@@ -10,7 +10,7 @@ export const BusDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError } = useToast();
 
   const [bus, setBus] = useState<Bus | null>(null);
   const [loading, setLoading] = useState(true);

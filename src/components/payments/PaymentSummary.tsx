@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, Gift, Shield } from 'lucide-react';
+import { Loader2, CheckCircle, Shield } from 'lucide-react';
 import { getOverview, createRazorpayOrder, verifyRazorpayPayment, PaymentOverviewResponse } from '../../api/payment';
 import { ScratchCard } from './ScratchCard';
 

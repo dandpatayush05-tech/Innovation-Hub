@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 function extractFrontendRoutes() {
   const apiDir = path.join(__dirname, '../src/api');
@@ -46,20 +45,8 @@ function extractBackendRoutes() {
   return routes;
 }
 
-function getMountPoints() {
-    const appTs = fs.readFileSync(path.join(__dirname, '../server/src/app.ts'), 'utf-8');
-    const regex = /app\.use\((['`])(\/api.*?)\1,\s*(.*?)\)/g;
-    const mounts = {};
-    let match;
-    while ((match = regex.exec(appTs)) !== null) {
-        mounts[match[3]] = match[2]; // e.g. mounts['authRoutes'] = '/api/auth'
-    }
-    return mounts;
-}
-
 const frontend = extractFrontendRoutes();
 const backend = extractBackendRoutes();
-const mounts = getMountPoints();
 
 // Normalize backend routes using mount points.
 // A file like 'authRoutes.ts' corresponds to router export in 'authRoutes' (usually).
@@ -67,7 +54,6 @@ const mounts = getMountPoints();
 // Since this is generic, let's just print them out and compare.
 
 console.log('--- Frontend Expected Routes ---');
-const feSet = new Set(frontend.map(r => `${r.method} ${r.path}`));
 frontend.forEach(r => console.log(`${r.method} ${r.path} (from ${r.file})`));
 
 console.log('\n--- Backend Available Routes ---');

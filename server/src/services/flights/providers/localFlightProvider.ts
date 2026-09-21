@@ -115,7 +115,7 @@ export class LocalFlightProvider implements FlightProvider {
   async getBookingInfo(flightId: string): Promise<BookingInfo> {
     // Note: In the real world, this would initialize a booking intent with the airline.
     // For local demo, we just verify the flight exists.
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('flights')
       .select('id')
       .eq('id', flightId)

@@ -6,7 +6,6 @@ import api from '../lib/axios';
 import { Plane, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { loginSchema, signupSchema as registerSchema } from '../schemas/authSchema';
 import { FieldError } from '../components/FieldError';
 import { PasswordStrength } from '../components/PasswordStrength';

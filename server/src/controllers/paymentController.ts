@@ -16,7 +16,7 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
       throw new BadRequestError('bookingIds must be a non-empty array', undefined);
     }
 
-    const { paymentGroup, groupData } = await createPaymentGroup(req.user!.id, bookingIds, discountCode);
+    const { paymentGroup } = await createPaymentGroup(req.user!.id, bookingIds, discountCode);
     const order = await createOrder(paymentGroup.total);
 
     await supabase.from('payment_groups').update({ razorpay_order_id: order.id }).eq('id', paymentGroup.id);
@@ -36,7 +36,7 @@ export const createRazorpayOrder = async (req: AuthRequest, res: Response) => {
 
 export const verifyRazorpaySignature = async (req: AuthRequest, res: Response) => {
   try {
-    const { paymentGroupId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
     const isValid = verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!isValid) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getPayments, downloadReceipt, Payment, PaymentsResponse } from '../api/payments';
-import { FileText, Download, CheckCircle2, AlertCircle, Clock, XCircle, Search, Filter } from 'lucide-react';
+import { getPayments, downloadReceipt, PaymentsResponse } from '../api/payments';
+import { Download, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react';
 
 const Payments = () => {
   const [paymentsData, setPaymentsData] = useState<PaymentsResponse | null>(null);

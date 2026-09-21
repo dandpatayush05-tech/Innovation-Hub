@@ -2,7 +2,7 @@ import { TransportProvider, TransportSearchParams, TransportOption } from './typ
 import { v4 as uuidv4 } from 'uuid';
 
 export class FlightTransportProvider implements TransportProvider {
-  mode: 'flight' = 'flight';
+  readonly mode = 'flight';
   
   async getOptions(params: TransportSearchParams): Promise<TransportOption[]> {
     // Generate a few local test flights
@@ -43,7 +43,7 @@ export class FlightTransportProvider implements TransportProvider {
 }
 
 export class BusTransportProvider implements TransportProvider {
-  mode: 'bus' = 'bus';
+  readonly mode = 'bus';
   
   async getOptions(params: TransportSearchParams): Promise<TransportOption[]> {
     const now = new Date(params.date + 'T00:00:00Z');
@@ -68,7 +68,7 @@ export class BusTransportProvider implements TransportProvider {
 }
 
 export class AutoTransportProvider implements TransportProvider {
-  mode: 'auto' = 'auto';
+  readonly mode = 'auto';
   
   async getOptions(params: TransportSearchParams): Promise<TransportOption[]> {
     const now = new Date(params.date + 'T00:00:00Z');

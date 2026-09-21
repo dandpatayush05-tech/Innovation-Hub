@@ -62,7 +62,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, typ
   const checkInDate = useWatch({ control, name: 'check_in_date' });
   const checkOutDate = useWatch({ control, name: 'check_out_date' });
   const bookingDate = useWatch({ control, name: 'booking_date' });
-  const guests = useWatch({ control, name: 'guests' });
   const rooms = useWatch({ control, name: 'rooms' });
   const participants = useWatch({ control, name: 'participants' });
   const occasion = useWatch({ control, name: 'occasion' });

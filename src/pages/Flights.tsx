@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { searchTransport, type TransportOption, type TransportSearchResponse } from '../api/transport';
+import { searchTransport, type TransportSearchResponse } from '../api/transport';
 import { geocode } from '../utils/geocode';
 import { Plane, Bus, Car, Search, Loader2, Info, ArrowRight, Clock, Star } from 'lucide-react';
 import { FieldError } from '../components/FieldError';

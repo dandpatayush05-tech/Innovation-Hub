@@ -6,7 +6,7 @@ export const getPlaces = async (req: Request, res: Response, next: NextFunction)
   try {
     const result = await listPlaces(req.query);
     res.json(result);
-  } catch (_error) {
+  } catch {
     next(new ApiError(500, 'Failed to fetch places', 'INTERNAL_ERROR'));
   }
 };
@@ -28,7 +28,7 @@ export const createNewPlace = async (req: Request, res: Response, next: NextFunc
   try {
     const place = await createPlace(req.body);
     res.status(201).json({ message: 'Place created successfully', data: place });
-  } catch (_error) {
+  } catch {
     next(new ApiError(500, 'Failed to create place', 'INTERNAL_ERROR'));
   }
 };
@@ -37,7 +37,7 @@ export const updateExistingPlace = async (req: Request, res: Response, next: Nex
   try {
     const place = await updatePlace(req.params.id as string, req.body);
     res.json({ message: 'Place updated successfully', data: place });
-  } catch (_error) {
+  } catch {
     next(new ApiError(500, 'Failed to update place', 'INTERNAL_ERROR'));
   }
 };
@@ -46,7 +46,7 @@ export const removePlace = async (req: Request, res: Response, next: NextFunctio
   try {
     await deletePlace(req.params.id as string);
     res.json({ message: 'Place deleted successfully' });
-  } catch (_error) {
+  } catch {
     next(new ApiError(500, 'Failed to delete place', 'INTERNAL_ERROR'));
   }
 };

@@ -44,7 +44,7 @@ export const HelpManager = () => {
       if (catsRes.data.length > 0 && !selectedCategory) {
         setSelectedCategory(catsRes.data[0].id);
       }
-    } catch (err) {
+    } catch {
       error('Failed to load help content');
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export const HelpManager = () => {
       }
       setEditingArticle(null);
       fetchData();
-    } catch (err) {
+    } catch {
       error('Failed to save article');
     }
   };
@@ -90,7 +90,7 @@ export const HelpManager = () => {
       await api.delete(`/api/admin/help/articles/${id}`);
       success('Article deleted');
       fetchData();
-    } catch (err) {
+    } catch {
       error('Failed to delete article');
     }
   };
