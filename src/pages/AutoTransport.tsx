@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, MapPin, Calendar, Users, FileText, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Car, MapPin, Calendar, Users, FileText, ArrowRight, CheckCircle2, Download } from 'lucide-react';
 import { createAutoBooking } from '../api/auto';
 import { Checkout } from '../components/Checkout';
+import { generateAndDownloadReceipt } from '../lib/receiptGenerator';
+import { useAuth } from '../context/AuthContext';
 
 export const AutoTransport = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     pickup_location: '',
     dropoff_location: '',
@@ -227,8 +230,8 @@ export const AutoTransport = () => {
               <h3 className="text-xl font-medium text-[#2A2A2A]">Secure Payment</h3>
               <p className="text-sm text-[#2A2A2A]/60 mt-1">Complete your transaction to reserve your transport.</p>
             </div>
-            
-            <Checkout 
+
+            <Checkout
               bookingId={bookingId}
               bookingType="auto"
               onSuccess={() => setStep(4)}
@@ -250,12 +253,31 @@ export const AutoTransport = () => {
               <span className="text-sm text-[#2A2A2A]/60 uppercase tracking-wide">Status</span>
               <p className="font-medium text-[#2A2A2A] mt-1 text-lg">Confirmed</p>
             </div>
-            <div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
               <button
-                onClick={() => navigate('/dashboard')}
-                className="bg-black text-white px-8 py-3 rounded-xl font-medium hover:bg-[#333] transition-colors"
+                onClick={() => generateAndDownloadReceipt({
+                  receiptNumber: `YS-REC-${Date.now().toString().slice(-4)}`,
+                  bookingReference: bookingId ? `YS-CAB-${bookingId.slice(-6)}` : `YS-CAB-${Date.now().toString().slice(-6)}`,
+                  bookingType: 'Cab/Auto Ride',
+                  title: `Local Transport (${formData.pickup_location} → ${formData.dropoff_location})`,
+                  destination: formData.dropoff_location || 'India',
+                  travelDate: formData.start_date || new Date().toISOString().split('T')[0],
+                  customerName: user?.name || 'Valued Passenger',
+                  customerEmail: user?.email || 'passenger@yatrasetu.com',
+                  totalAmount: 450,
+                  paymentMethod: 'Verified 3D Secure Demo Card',
+                  taxAmount: Math.round(450 * 0.05)
+                })}
+                className="bg-stone-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
               >
-                View in Dashboard
+                <Download className="w-4 h-4 text-amber-400" />
+                <span>Download Cab Invoice</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/bookings')}
+                className="bg-stone-100 hover:bg-stone-200 text-stone-800 px-6 py-3 rounded-xl font-bold text-xs transition"
+              >
+                View My Bookings
               </button>
             </div>
           </div>

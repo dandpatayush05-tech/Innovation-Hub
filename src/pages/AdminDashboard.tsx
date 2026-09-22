@@ -31,6 +31,8 @@ export const AdminDashboard = () => {
   const [fetching, setFetching] = useState(true);
   const { success: toastSuccess, error: toastError } = useToast();
 
+  const [latestNewTicket, setLatestNewTicket] = useState<ContactRequest | null>(null);
+
   useEffect(() => {
     if (user?.role === 'admin') {
       fetchData();
@@ -39,12 +41,46 @@ export const AdminDashboard = () => {
     }
   }, [user, activeTab]);
 
+  // Listen for real-time incoming support tickets
+  useEffect(() => {
+    const handleNewTicket = (e: any) => {
+      const ticket = e.detail;
+      if (ticket) {
+        setRequests(prev => [ticket, ...prev.filter(r => r.id !== ticket.id)]);
+        setLatestNewTicket(ticket);
+        toastSuccess(`🔔 New Support Inquiry from ${ticket.name}!`);
+      }
+    };
+
+    window.addEventListener('new_support_ticket', handleNewTicket);
+    return () => window.removeEventListener('new_support_ticket', handleNewTicket);
+  }, [toastSuccess]);
+
   const fetchData = async () => {
     setFetching(true);
     try {
       if (activeTab === 'tickets') {
-        const res = await api.get('/contact');
-        setRequests(res.data.contacts);
+        let apiContacts: ContactRequest[] = [];
+        try {
+          const res = await api.get('/contact');
+          apiContacts = res.data.contacts || [];
+        } catch (apiErr) {
+          console.warn('API fetch contact error (using fallback):', apiErr);
+        }
+
+        // Merge with local storage support tickets
+        const localStored = localStorage.getItem('yatra_setu_support_tickets');
+        const localTickets: ContactRequest[] = localStored ? JSON.parse(localStored) : [];
+
+        const combinedMap = new Map<string, ContactRequest>();
+        localTickets.forEach(t => combinedMap.set(t.id, t));
+        apiContacts.forEach(t => combinedMap.set(t.id, t));
+
+        const allTickets = Array.from(combinedMap.values()).sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setRequests(allTickets);
       } else if (activeTab === 'locations') {
         const res = await getBusinesses({ limit: 100 });
         setBusinesses(res.data);
@@ -116,7 +152,53 @@ export const AdminDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-serif text-[#2A2A2A] mb-8">Admin Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-serif text-[#2A2A2A]">Admin Dashboard</h1>
+          <p className="text-xs text-[#2A2A2A]/60 mt-1">
+            Real-time management of traveler support inquiries, hotel availability, and locations.
+          </p>
+        </div>
+      </div>
+
+      {/* Live Incoming Inquiry Popup Banner */}
+      {latestNewTicket && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 text-gray-900 shadow-md flex items-start justify-between gap-4 animate-in fade-in duration-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500 text-white shadow-sm shrink-0">
+              <Mail className="w-5 h-5 animate-bounce" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                  ⚡ New Incoming Support Request
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(latestNewTicket.created_at).toLocaleTimeString()}
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-gray-900 mt-1">
+                {latestNewTicket.name} ({latestNewTicket.email}) — <span className="font-normal text-gray-700">"{latestNewTicket.message}"</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className="bg-[#C84B31] text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-[#A63A25] transition-colors"
+            >
+              View Inquiries
+            </button>
+            <button
+              onClick={() => setLatestNewTicket(null)}
+              className="text-gray-400 hover:text-gray-700 text-xs px-2 py-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Tabs */}
       <div className="flex gap-4 mb-8 border-b border-black/10">

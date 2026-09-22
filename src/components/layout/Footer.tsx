@@ -6,23 +6,23 @@ export const Footer = () => {
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 lg:col-span-2">
-            <a href="#" aria-label="TourEase Home" className="flex items-center gap-2 text-white mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg inline-flex">
-              <Map className="w-8 h-8 text-primary-light" aria-hidden="true" />
-              <span className="text-2xl font-heading font-bold tracking-tight">
-                TourEase
+            <a href="#" aria-label="Yatra Setu Home" className="flex items-center gap-2 text-white mb-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg inline-flex">
+              <Map className="w-8 h-8 text-[#C84B31]" aria-hidden="true" />
+              <span className="text-2xl font-serif font-bold tracking-tight text-white">
+                Yatra Setu
               </span>
             </a>
             <p className="text-gray-400 max-w-sm mb-8 leading-relaxed">
               We're rethinking how the world travels. One smart, unified itinerary at a time.
             </p>
             <div className="flex gap-4">
-              <a href="#" aria-label="Website" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <a href="#" aria-label="Website" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#C84B31] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <Globe className="w-5 h-5" aria-hidden="true" />
               </a>
-              <a href="#" aria-label="Email" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <a href="#" aria-label="Email" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#C84B31] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <Mail className="w-5 h-5" aria-hidden="true" />
               </a>
-              <a href="#" aria-label="Chat" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <a href="#" aria-label="Chat" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#C84B31] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <MessageCircle className="w-5 h-5" aria-hidden="true" />
               </a>
             </div>
@@ -51,7 +51,7 @@ export const Footer = () => {
         
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
           <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} TourEase Inc. All rights reserved.
+            © {new Date().getFullYear()} Yatra Setu. All rights reserved.
           </p>
           <p className="text-gray-500 text-sm font-medium">
             Made with <span className="text-accent">♥</span> by the Student Innovators Team

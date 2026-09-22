@@ -2,23 +2,24 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFlight, createFlightBooking, type Flight } from '../api/flights';
 import { Checkout } from '../components/Checkout';
-import { Plane, Loader2, Info, ArrowLeft, Check, User } from 'lucide-react';
+import { Plane, Loader2, Info, ArrowLeft, Check, User, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { generateAndDownloadReceipt } from '../lib/receiptGenerator';
 
 export const FlightDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { error: toastError } = useToast();
-  
+
   const [flight, setFlight] = useState<Flight | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Booking Form State
   const [passengers, setPassengers] = useState(1);
   const [passengerDetails, setPassengerDetails] = useState([{ firstName: '', lastName: '' }]);
-  
+
   // Checkout Flow State
   const [step, setStep] = useState<'seats' | 'details' | 'review' | 'payment' | 'success'>('seats');
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -73,7 +74,7 @@ export const FlightDetails = () => {
   const renderSeatGrid = () => {
     const totalDemoSeats = 60; // Just some demo seats for flights
     const rows = Math.ceil(totalDemoSeats / 4);
-    
+
     let grid = [];
     for (let r = 0; r < rows; r++) {
       let rowSeats = [];
@@ -81,17 +82,17 @@ export const FlightDetails = () => {
         const seatNum = `${r + 1}${['A', 'B', 'C', 'D'][c]}`;
         const isBooked = flight?.bookedSeats?.includes(seatNum);
         const isSelected = selectedSeats.includes(seatNum);
-        
+
         rowSeats.push(
           <button
             key={seatNum}
             disabled={isBooked}
             onClick={() => handleSeatClick(seatNum)}
             className={`w-12 h-12 rounded-t-xl rounded-b-md m-1 flex flex-col items-center justify-center text-xs font-bold transition-colors
-              ${isBooked 
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                : isSelected 
-                  ? 'bg-[#C84B31] text-white' 
+              ${isBooked
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : isSelected
+                  ? 'bg-[#C84B31] text-white'
                   : 'bg-white border-2 border-gray-300 text-gray-600 hover:border-[#C84B31]'
               }
             `}
@@ -132,7 +133,7 @@ export const FlightDetails = () => {
         passengers,
         passenger_details: passengerDetails
       });
-      
+
       setBookingId(res.booking.id);
       setStep('payment');
     } catch (err: any) {
@@ -197,7 +198,7 @@ export const FlightDetails = () => {
       </button>
 
       <div className="bg-white rounded-3xl p-6 md:p-8 border border-black/5 shadow-sm space-y-6">
-        
+
         {/* Flight Summary Header */}
         <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-black/5 pb-6 gap-6">
           <div className="flex items-center gap-4">
@@ -233,7 +234,7 @@ export const FlightDetails = () => {
           {step === 'seats' && (
             <div className="space-y-6 animate-in fade-in">
               <h3 className="text-xl font-bold text-[#2A2A2A] text-center">Select Your Seats</h3>
-              
+
               <div className="flex justify-center gap-6 mb-8">
                 <div className="flex items-center gap-2"><div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm"></div> <span className="text-sm text-gray-600">Available</span></div>
                 <div className="flex items-center gap-2"><div className="w-4 h-4 bg-[#C84B31] rounded-sm"></div> <span className="text-sm text-gray-600">Selected</span></div>
@@ -259,7 +260,7 @@ export const FlightDetails = () => {
                   <p className="text-sm text-gray-500">Selected Seats ({selectedSeats.length})</p>
                   <p className="font-bold text-lg">{selectedSeats.join(', ') || 'None'}</p>
                 </div>
-                <button 
+                <button
                   onClick={proceedToDetails}
                   disabled={selectedSeats.length === 0}
                   className="bg-[#C84B31] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#A63A25] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -287,9 +288,9 @@ export const FlightDetails = () => {
                       <span className="font-medium text-sm">Passenger {index + 1} (Seat: {(p as any).seatNumber})</span>
                     </div>
                     <div className="flex-1">
-                      <input 
-                        type="text" 
-                        placeholder="First Name" 
+                      <input
+                        type="text"
+                        placeholder="First Name"
                         required
                         value={p.firstName}
                         onChange={(e) => updatePassenger(index, 'firstName', e.target.value)}
@@ -297,9 +298,9 @@ export const FlightDetails = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <input 
-                        type="text" 
-                        placeholder="Last Name" 
+                      <input
+                        type="text"
+                        placeholder="Last Name"
                         required
                         value={p.lastName}
                         onChange={(e) => updatePassenger(index, 'lastName', e.target.value)}
@@ -311,7 +312,7 @@ export const FlightDetails = () => {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-black/5">
-                <button 
+                <button
                   type="submit"
                   className="bg-[#C84B31] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#A63A25] transition-colors"
                 >
@@ -329,7 +330,7 @@ export const FlightDetails = () => {
                   Edit Passengers
                 </button>
               </div>
-              
+
               <div className="bg-[#FDFBF7] p-5 rounded-2xl border border-black/5">
                 <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider text-[#2A2A2A]/60">Passengers</h4>
                 <div className="space-y-2">
@@ -360,7 +361,7 @@ export const FlightDetails = () => {
 
               {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl">{error}</div>}
 
-              <button 
+              <button
                 onClick={handleCreateBooking}
                 disabled={isSubmitting}
                 className="w-full bg-black text-white py-4 rounded-xl font-medium hover:bg-[#333] transition-colors disabled:opacity-50 flex justify-center items-center"
@@ -376,8 +377,8 @@ export const FlightDetails = () => {
                 <h3 className="text-xl font-medium text-[#2A2A2A]">Secure Payment</h3>
                 <p className="text-sm text-[#2A2A2A]/60 mt-1">Complete your transaction to issue tickets.</p>
               </div>
-              
-              <Checkout 
+
+              <Checkout
                 bookingId={bookingId}
                 bookingType="flight"
                 onSuccess={handlePaymentSuccess}
@@ -395,13 +396,33 @@ export const FlightDetails = () => {
               <p className="text-[#2A2A2A]/60 max-w-md mx-auto">
                 Your demo flight on {flight.airline} has been successfully reserved. Since this is a test environment, a PNR is not generated.
               </p>
-              
-              <div className="pt-6">
-                <button 
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-[#333] transition-colors"
+
+              <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                <button
+                  onClick={() => generateAndDownloadReceipt({
+                    receiptNumber: `YS-REC-${Date.now().toString().slice(-4)}`,
+                    bookingReference: bookingId ? `YS-FLT-${bookingId.slice(-6)}` : `YS-FLT-${Date.now().toString().slice(-6)}`,
+                    bookingType: 'Flight',
+                    title: `${flight.airline} (${flight.flight_number})`,
+                    destination: flight.arrival_airport || 'India',
+                    travelDate: new Date(flight.departure_time || Date.now()).toLocaleDateString('en-IN'),
+                    customerName: user?.name || (passengerDetails[0]?.firstName ? `${passengerDetails[0].firstName} ${passengerDetails[0].lastName}` : 'Valued Passenger'),
+                    customerEmail: user?.email || 'passenger@yatrasetu.com',
+                    seats: selectedSeats.length > 0 ? selectedSeats : ['Economy'],
+                    totalAmount: totalPrice,
+                    paymentMethod: 'Verified 3D Secure Demo Card',
+                    taxAmount: Math.round(totalPrice * 0.05)
+                  })}
+                  className="bg-stone-900 hover:bg-black text-white px-6 py-3 rounded-full font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
                 >
-                  View Upcoming Bookings
+                  <Download className="w-4 h-4 text-amber-400" />
+                  <span>Download Flight Invoice</span>
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/bookings')}
+                  className="bg-stone-100 hover:bg-stone-200 text-stone-800 px-6 py-3 rounded-full font-bold text-xs transition"
+                >
+                  View My Bookings
                 </button>
               </div>
             </div>

@@ -6,14 +6,14 @@ import { env } from '../config/env';
 export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // If the error is a Zod validation error, return 422 Unprocessable Entity
   if (err instanceof ZodError) {
-    // We map Zod issues to a cleaner format without exposing internal schema paths unnecessarily, 
-    // though the default Zod format is generally safe.
     const issues = err.issues.map(issue => ({
       path: issue.path.join('.'),
       message: issue.message
     }));
     console.error('Zod Validation Failed:', JSON.stringify(issues, null, 2));
     return res.status(422).json({
+      success: false,
+      data: null,
       error: {
         message: 'Validation failed',
         code: 'VALIDATION_ERROR',
@@ -30,6 +30,8 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
     }
     
     return res.status(err.statusCode).json({
+      success: false,
+      data: null,
       error: responsePayload
     });
   }
@@ -42,6 +44,8 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
   
   if (isPostgresError) {
     return res.status(500).json({
+      success: false,
+      data: null,
       error: {
         message: 'Database operation failed',
         code: 'DATABASE_ERROR'
@@ -52,9 +56,12 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
   const message = err instanceof Error ? err.message : 'Internal Server Error';
 
   return res.status(500).json({
+    success: false,
+    data: null,
     error: {
       message: env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
       code: 'INTERNAL_ERROR'
     }
   });
 };
+

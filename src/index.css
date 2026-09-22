@@ -1,19 +1,82 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Times New Roman", Times, serif;
-  --font-display: "Times New Roman", Times, serif;
+  --font-sans: "Geist", sans-serif;
+  --font-display: "Special Elite", serif;
   
-  --color-vstara-dark: #0a0a0a;
-  --color-vstara-text: #1a1a1a;
-  --color-vstara-muted: #767676;
-  --color-vstara-prompt: #905831;
+  --color-wandor-dark: #0a0a0a;
+  --color-wandor-text: #1a1a1a;
+  --color-wandor-muted: #767676;
+  --color-wandor-prompt: #905831;
 }
 
 @layer base {
   body {
-    font-family: 'Times New Roman', Times, serif;
+    font-family: 'Geist', sans-serif;
     overflow-x: hidden;
-    background: #fff;
+    background-color: #FAF8F5;
+    color: #2A2A2A;
   }
 }
+
+/* Glassmorphism Surface & Background Design System */
+.glass-base-bg {
+  background: radial-gradient(circle at 15% 15%, rgba(200, 75, 49, 0.035) 0%, transparent 45%),
+              radial-gradient(circle at 85% 25%, rgba(245, 158, 11, 0.04) 0%, transparent 45%),
+              radial-gradient(circle at 50% 85%, rgba(200, 75, 49, 0.03) 0%, transparent 55%),
+              linear-gradient(180deg, #FDFBF7 0%, #F9F6F0 50%, #FAF8F5 100%);
+  background-attachment: fixed;
+}
+
+.glass-nav {
+  background: rgba(253, 251, 247, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(200, 75, 49, 0.22);
+  box-shadow: 0 20px 35px -5px rgba(200, 75, 49, 0.08), 0 8px 16px -3px rgba(0, 0, 0, 0.04);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+}
+
+.glass-badge-dark {
+  background: rgba(42, 42, 42, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-badge-light {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+

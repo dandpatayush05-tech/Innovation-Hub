@@ -58,12 +58,12 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
 
   if (error) {
     if (error.code === 'PGRST205') {
-      return res.json({ notifications: [] });
+      return res.json({ data: [], notifications: [] });
     }
     throw new BadRequestError(error.message, undefined);
   }
 
-  return res.json({ notifications: data });
+  return res.json({ data: data || [], notifications: data || [] });
 };
 
 export const markAsRead = async (req: AuthRequest, res: Response) => {
@@ -86,7 +86,7 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
     throw new BadRequestError(error.message, undefined);
   }
 
-  return res.json({ notification: data });
+  return res.json({ data: data, notification: data });
 };
 
 export const markAllAsRead = async (req: AuthRequest, res: Response) => {

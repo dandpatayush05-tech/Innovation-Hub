@@ -28,7 +28,7 @@ export const Hero = () => {
               AI-Powered Tourism Platform
             </span>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] mb-6">
-              Travel smarter,<br /> not harder with <span className="text-primary">TourEase</span>
+              Travel smarter,<br /> not harder with <span className="text-primary">Yatra Setu</span>
             </h1>
             <p className="text-xl text-gray-600 mb-10 max-w-2xl leading-relaxed">
               Unify your hotel bookings, local guides, itinerary planning, and transport into one seamless experience powered by intelligent AI.

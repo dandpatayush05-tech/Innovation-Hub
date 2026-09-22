@@ -25,7 +25,7 @@ export const ForBusinesses = () => {
               For Partners
             </span>
             <h2 className="text-4xl md:text-5xl font-bold font-heading leading-tight mb-6">
-              Grow Your Business with TourEase
+              Grow Your Business with Yatra Setu
             </h2>
             <p className="text-lg text-teal-100 mb-8 max-w-xl leading-relaxed">
               Whether you're a boutique hotel, an established travel agency, or a passionate local guide, our AI engine connects you directly with travelers who are looking for exactly what you offer.

@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBus, createBusBooking, type Bus } from '../api/buses';
 import { Checkout } from '../components/Checkout';
-import { Loader2, Info, ArrowLeft, Check, User, AlertTriangle } from 'lucide-react';
+import { Loader2, Info, ArrowLeft, Check, User, AlertTriangle, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { generateAndDownloadReceipt } from '../lib/receiptGenerator';
 
 export const BusDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,13 +19,13 @@ export const BusDetails = () => {
 
   // Steps: 'seats' -> 'details' -> 'review' -> 'payment' -> 'success'
   const [step, setStep] = useState<'seats' | 'details' | 'review' | 'payment' | 'success'>('seats');
-  
+
   // State for seat selection
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  
+
   // State for passenger details
-  const [passengerDetails, setPassengerDetails] = useState<{firstName: string, lastName: string, seatNumber: string}[]>([]);
-  
+  const [passengerDetails, setPassengerDetails] = useState<{ firstName: string, lastName: string, seatNumber: string }[]>([]);
+
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   const fetchBus = useCallback(async () => {
@@ -130,9 +131,9 @@ export const BusDetails = () => {
 
   // Render Seat Grid (Generic 2x2 layout for demo)
   const renderSeatGrid = () => {
-    const totalDemoSeats = 40; 
+    const totalDemoSeats = 40;
     const rows = Math.ceil(totalDemoSeats / 4);
-    
+
     let grid = [];
     for (let r = 0; r < rows; r++) {
       let rowSeats = [];
@@ -140,17 +141,17 @@ export const BusDetails = () => {
         const seatNum = `${r + 1}${['A', 'B', 'C', 'D'][c]}`;
         const isBooked = bus.bookedSeats?.includes(seatNum);
         const isSelected = selectedSeats.includes(seatNum);
-        
+
         rowSeats.push(
           <button
             key={seatNum}
             disabled={isBooked}
             onClick={() => handleSeatClick(seatNum)}
             className={`w-12 h-12 rounded-t-xl rounded-b-md m-1 flex flex-col items-center justify-center text-xs font-bold transition-colors
-              ${isBooked 
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                : isSelected 
-                  ? 'bg-[#C84B31] text-white' 
+              ${isBooked
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : isSelected
+                  ? 'bg-[#C84B31] text-white'
                   : 'bg-white border-2 border-gray-300 text-gray-600 hover:border-[#C84B31]'
               }
             `}
@@ -180,7 +181,7 @@ export const BusDetails = () => {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button 
+        <button
           onClick={() => {
             if (step === 'seats') navigate(-1);
             else if (step === 'details') setStep('seats');
@@ -215,7 +216,7 @@ export const BusDetails = () => {
         {step === 'seats' && (
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5">
             <h3 className="text-xl font-bold text-[#2A2A2A] mb-6 text-center">Select Your Seats</h3>
-            
+
             <div className="flex justify-center gap-6 mb-8">
               <div className="flex items-center gap-2"><div className="w-4 h-4 bg-white border-2 border-gray-300 rounded-sm"></div> <span className="text-sm text-gray-600">Available</span></div>
               <div className="flex items-center gap-2"><div className="w-4 h-4 bg-[#C84B31] rounded-sm"></div> <span className="text-sm text-gray-600">Selected</span></div>
@@ -239,7 +240,7 @@ export const BusDetails = () => {
                 <p className="text-sm text-gray-500">Selected Seats ({selectedSeats.length})</p>
                 <p className="font-bold text-lg">{selectedSeats.join(', ') || 'None'}</p>
               </div>
-              <button 
+              <button
                 onClick={proceedToDetails}
                 disabled={selectedSeats.length === 0}
                 className="bg-[#2A2A2A] text-white px-8 py-3 rounded-xl font-medium hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -254,7 +255,7 @@ export const BusDetails = () => {
         {step === 'details' && (
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5">
             <h3 className="text-xl font-bold text-[#2A2A2A] mb-6">Passenger Details</h3>
-            
+
             <div className="space-y-6">
               {passengerDetails.map((p, idx) => (
                 <div key={idx} className="p-4 border border-gray-200 rounded-xl">
@@ -264,8 +265,8 @@ export const BusDetails = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">First Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={p.firstName}
                         onChange={e => updatePassenger(idx, 'firstName', e.target.value)}
                         className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:border-[#C84B31]"
@@ -273,8 +274,8 @@ export const BusDetails = () => {
                     </div>
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Last Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={p.lastName}
                         onChange={e => updatePassenger(idx, 'lastName', e.target.value)}
                         className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:border-[#C84B31]"
@@ -286,7 +287,7 @@ export const BusDetails = () => {
             </div>
 
             <div className="mt-8">
-              <button 
+              <button
                 onClick={proceedToReview}
                 className="w-full bg-[#2A2A2A] text-white px-8 py-4 rounded-xl font-medium hover:bg-black transition-colors"
               >
@@ -300,7 +301,7 @@ export const BusDetails = () => {
         {step === 'review' && (
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5">
             <h3 className="text-xl font-bold text-[#2A2A2A] mb-6">Review & Pay</h3>
-            
+
             <div className="bg-gray-50 p-6 rounded-xl mb-6">
               <h4 className="font-semibold mb-4 border-b pb-2">Fare Summary</h4>
               <div className="flex justify-between mb-2 text-gray-600">
@@ -317,7 +318,7 @@ export const BusDetails = () => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={proceedToPayment}
               disabled={loading}
               className="w-full bg-[#C84B31] text-white px-8 py-4 rounded-xl font-medium hover:bg-[#A63A25] transition-colors flex items-center justify-center gap-2"
@@ -330,7 +331,7 @@ export const BusDetails = () => {
         {/* Step 4: Payment via Razorpay */}
         {step === 'payment' && bookingId && (
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5">
-            <Checkout 
+            <Checkout
               bookingId={bookingId}
               bookingType="bus_leg"
               onSuccess={() => setStep('success')}
@@ -344,17 +345,37 @@ export const BusDetails = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-8 h-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">Booking Confirmed!</h2>
-            <p className="text-gray-500 mb-8">Your demo bus tickets have been secured.</p>
-            <p className="text-sm text-gray-400 mb-8 max-w-md mx-auto">
-              Note: Because this is a test environment, a real ticket PDF is not generated. You can view this reservation in your upcoming bookings.
-            </p>
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="bg-[#2A2A2A] text-white px-8 py-3 rounded-xl font-medium hover:bg-black transition-colors"
-            >
-              Back to Dashboard
-            </button>
+            <h2 className="text-2xl font-bold text-[#2A2A2A] mb-2">Bus Booking Confirmed!</h2>
+            <p className="text-gray-500 mb-6">Your demo bus tickets have been secured. Official GST tax invoice generated.</p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-6">
+              <button
+                onClick={() => bus && generateAndDownloadReceipt({
+                  receiptNumber: `YS-REC-${Date.now().toString().slice(-4)}`,
+                  bookingReference: bookingId ? `YS-BUS-${bookingId.slice(-6)}` : `YS-BUS-${Date.now().toString().slice(-6)}`,
+                  bookingType: 'Bus Journey',
+                  title: `${bus.operator_name || 'Express Volvo'} (${bus.route_source} → ${bus.route_destination})`,
+                  destination: bus.route_destination || 'India',
+                  travelDate: new Date(bus.departure_time || Date.now()).toLocaleDateString('en-IN'),
+                  customerName: user?.name || (passengerDetails[0]?.firstName ? `${passengerDetails[0].firstName} ${passengerDetails[0].lastName}` : 'Valued Passenger'),
+                  customerEmail: user?.email || 'passenger@yatrasetu.com',
+                  seats: selectedSeats,
+                  totalAmount: selectedSeats.length * bus.price,
+                  paymentMethod: 'Verified 3D Secure Demo Card',
+                  taxAmount: Math.round((selectedSeats.length * bus.price) * 0.05)
+                })}
+                className="bg-stone-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4 text-amber-400" />
+                <span>Download Bus Tax Invoice</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/bookings')}
+                className="bg-stone-100 hover:bg-stone-200 text-stone-800 px-6 py-3 rounded-xl font-bold text-xs transition"
+              >
+                View My Bookings
+              </button>
+            </div>
           </div>
         )}
       </div>

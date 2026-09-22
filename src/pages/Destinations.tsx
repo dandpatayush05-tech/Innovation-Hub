@@ -1,14 +1,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { getDestinations } from '../api/destinations';
 import type { Destination } from '../api/destinations';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 import { DestinationCardSkeleton } from '../components/skeletons/DestinationCardSkeleton';
+import { useAuth } from '../context/AuthContext';
 
 export const Destinations = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -44,6 +47,14 @@ export const Destinations = () => {
     fetchDestinations();
   }, [fetchDestinations]);
 
+  const handleDashboardClick = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login', { state: { from: { pathname: '/dashboard' } } });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] font-sans pb-24">
       {/* Navigation (Simple version for internal pages) */}
@@ -53,10 +64,26 @@ export const Destinations = () => {
             <MapPin className="w-8 h-8 text-[#C84B31]" />
             <span className="font-display text-[28px] text-black leading-none select-none mt-1">Yatra Setu</span>
           </Link>
-          <div className="flex gap-6">
-            <Link to="/dashboard" className="text-[15px] font-semibold uppercase text-[#292929] tracking-[0.04em] hover:opacity-55 transition-opacity">
+          <div className="flex items-center gap-6">
+            <button
+              onClick={handleDashboardClick}
+              className="text-[15px] font-semibold uppercase text-[#292929] tracking-[0.04em] hover:opacity-55 transition-opacity bg-transparent border-none cursor-pointer"
+            >
               Dashboard
-            </Link>
+            </button>
+            {user ? (
+              <span className="text-xs font-semibold text-[#C84B31] bg-[#C84B31]/10 px-3 py-1 rounded-full">
+                {user.name?.split(' ')[0] || 'Traveler'}
+              </span>
+            ) : (
+              <Link 
+                to="/login" 
+                state={{ from: { pathname: '/dashboard' }, isRegister: true }}
+                className="text-[15px] font-semibold uppercase text-[#C84B31] tracking-[0.04em] hover:opacity-80 transition-opacity"
+              >
+                Register
+              </Link>
+            )}
           </div>
         </div>
       </nav>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../lib/axios';
@@ -12,7 +12,9 @@ import { PasswordStrength } from '../components/PasswordStrength';
 import { LandingBackgroundScene } from '../components/LandingBackgroundScene';
 
 export const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const isRegisterParam = (location.state as any)?.isRegister || new URLSearchParams(location.search).get('mode') === 'register';
+  const [isLogin, setIsLogin] = useState(!isRegisterParam);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -49,7 +51,8 @@ export const Login = () => {
         login(res.data.accessToken, res.data.user);
         toastSuccess('Account created successfully!');
       }
-      navigate('/dashboard');
+      const target = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(target, { replace: true });
     } catch (err: any) {
       const msg = err.response?.data?.error?.message || 'Something went wrong';
       setServerError(msg);

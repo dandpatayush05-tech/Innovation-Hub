@@ -53,7 +53,7 @@ export const verifyRazorpaySignature = async (req: AuthRequest, res: Response) =
 
 export const getOverview = async (req: AuthRequest, res: Response) => {
   try {
-    let { bookingIds } = req.query;
+    const { bookingIds } = req.query;
     let ids: string[] = [];
     if (typeof bookingIds === 'string') {
       ids = bookingIds.split(',');
@@ -95,7 +95,7 @@ export const getPayments = async (req: AuthRequest, res: Response) => {
   // Keeping Phase 9 getPayments unchanged
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
-  
+
   const start = (page - 1) * limit;
   const end = start + limit - 1;
 
@@ -130,23 +130,24 @@ export const downloadReceipt = async (req: AuthRequest, res: Response) => {
 
 export const downloadCombinedReceipt = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    
+    const id = req.params.id as string;
+
     // Validate access and get group data
     const { data: group } = await supabase
       .from('payment_groups')
-      .select('*, items:payment_group_items(*)')
+      .select('id, user_id')
       .eq('id', id)
-      .eq('user_id', req.user!.id)
       .single();
 
-    if (!group) throw new NotFoundError('Payment group not found', undefined);
+    if (!group) throw new NotFoundError('Payment group not found');
+    if (group.user_id !== req.user?.id && req.user?.role !== 'admin') throw new ForbiddenError('Access denied');
 
-    const pdfBuffer = await generateCombinedReceipt(group, group.items);
-    
+    const doc = await generateCombinedReceipt(id);
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=receipt-group-${id}.pdf`);
-    res.send(pdfBuffer);
+    res.setHeader('Content-Disposition', `attachment; filename=receipt-group-${id.substring(0, 8)}.pdf`);
+    doc.pipe(res);
+    doc.end();
   } catch (error: any) {
     throw new ApiError(500, error.message || 'Failed to generate combined receipt', 'INTERNAL_ERROR', undefined);
   }
@@ -212,7 +213,7 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
     }
 
     const event = JSON.parse(req.body.toString('utf8'));
-    
+
     // Process known events
     if (event.event === 'payment.captured') {
       const order_id = event.payload.payment.entity.order_id;
@@ -221,7 +222,7 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
       // Find the group
       const { data: group } = await supabase
         .from('payment_groups')
-        .select('id, user_id, status')
+        .select('id, user_id, status, subtotal')
         .eq('razorpay_order_id', order_id)
         .single();
 
@@ -274,7 +275,7 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
             `Your ${item.item_type} booking has been confirmed! You can view it in your dashboard.`
           );
           if (phone) {
-             sendBookingConfirmationSMS(phone, item.booking_id, item.item_type, payment_id).catch(err => console.error(err));
+            sendBookingConfirmationSMS(phone, item.booking_id, item.item_type, payment_id).catch(err => console.error(err));
           }
         }
       }
@@ -284,7 +285,7 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
       const error_desc = event.payload.payment.entity.error_description || 'Payment failed';
       const amount = (event.payload.payment.entity.amount || 0) / 100;
       const payment_id = event.payload.payment.entity.id;
-      
+
       const { data: group } = await supabase
         .from('payment_groups')
         .select('id, user_id, status')
@@ -292,9 +293,9 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
         .single();
 
       if (group && group.status !== 'paid' && group.status !== 'failed') {
-        await supabase.from('payment_groups').update({ 
-          status: 'failed', 
-          failure_reason: error_desc 
+        await supabase.from('payment_groups').update({
+          status: 'failed',
+          failure_reason: error_desc
         }).eq('id', group.id);
 
         const { data: user } = await supabase.from('users').select('phone').eq('id', group.user_id).single();

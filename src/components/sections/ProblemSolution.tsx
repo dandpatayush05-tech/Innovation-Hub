@@ -31,7 +31,7 @@ export const ProblemSolution = () => {
             className="mb-8"
           />
           <p className="text-lg font-medium text-primary bg-primary/5 border border-primary/10 inline-block px-6 py-3 rounded-2xl">
-            [PLACEHOLDER: one sentence on what makes TourEase's approach different from existing OTAs/travel apps]
+            Yatra Setu unifies flights, stays, verified local guides, and real-time AI rescheduling in one seamless dashboard.
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export const ProblemSolution = () => {
             <ArrowRight className="w-5 h-5 text-gray-400 rotate-90" />
           </div>
 
-          {/* TourEase Way Column */}
+          {/* Yatra Setu Way Column */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -81,7 +81,7 @@ export const ProblemSolution = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-teal-200 rounded-bl-full -mr-16 -mt-16 opacity-30"></div>
             
             <h3 className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-3">
-              <span className="text-primary">The TourEase Way</span>
+              <span className="text-primary">The Yatra Setu Way</span>
             </h3>
             
             <ul className="space-y-6">

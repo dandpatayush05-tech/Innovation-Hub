@@ -967,3 +967,113 @@ INSERT INTO public.help_categories (slug, title, display_order, icon) VALUES
     ('terms-and-conditions', 'Terms & Conditions', 60, 'FileText'),
     ('privacy-policy', 'Privacy Policy', 70, 'Shield')
 ON CONFLICT (slug) DO NOTHING;
+
+-- Chunk 34: Unified Trip & Booking Data Model Migration
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS budget NUMERIC;
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'planned' CHECK (status IN ('draft', 'planned', 'active', 'completed', 'cancelled'));
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS itinerary JSONB DEFAULT '{}';
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+CREATE TABLE IF NOT EXISTS public.unified_bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    trip_id UUID REFERENCES public.trips(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('hotel', 'flight', 'bus', 'cab', 'experience')),
+    provider TEXT NOT NULL,
+    booking_reference TEXT NOT NULL,
+    amount NUMERIC NOT NULL CHECK (amount >= 0),
+    status TEXT DEFAULT 'confirmed' CHECK (status IN ('pending', 'confirmed', 'delayed', 'rescheduled', 'cancelled', 'completed')),
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_unified_bookings_trip_id ON public.unified_bookings(trip_id);
+CREATE INDEX IF NOT EXISTS idx_unified_bookings_user_id ON public.unified_bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_unified_bookings_type ON public.unified_bookings(type);
+
+ALTER TABLE public.unified_bookings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own unified bookings" ON public.unified_bookings
+    FOR SELECT USING (auth.uid() = user_id OR user_id = auth.uid());
+
+CREATE POLICY "Users can insert their own unified bookings" ON public.unified_bookings
+    FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id = auth.uid());
+
+CREATE POLICY "Service role full access to unified bookings" ON public.unified_bookings
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+
+-- ====================================================================
+-- Transport Hubs & Connectivity Schema (Airports, Rail, Bus Stations)
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS public.airports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    iata_code VARCHAR(10) NOT NULL,
+    icao_code VARCHAR(10),
+    name TEXT NOT NULL,
+    city TEXT NOT NULL,
+    state TEXT,
+    country TEXT NOT NULL DEFAULT 'India',
+    latitude NUMERIC NOT NULL,
+    longitude NUMERIC NOT NULL,
+    terminal_info JSONB DEFAULT '{}'::jsonb,
+    facilities JSONB DEFAULT '{}'::jsonb,
+    is_nearest_hub BOOLEAN DEFAULT false,
+    hub_type TEXT DEFAULT 'co-located', -- 'co-located' or 'nearest_practical'
+    connectivity_notes TEXT,
+    destination_id UUID REFERENCES destinations(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.railway_stations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_code VARCHAR(10) NOT NULL,
+    name TEXT NOT NULL,
+    city TEXT NOT NULL,
+    latitude NUMERIC NOT NULL,
+    longitude NUMERIC NOT NULL,
+    is_nearest_hub BOOLEAN DEFAULT false,
+    hub_type TEXT DEFAULT 'co-located', -- 'co-located' or 'nearest_practical'
+    connectivity_notes TEXT,
+    destination_id UUID REFERENCES destinations(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.bus_stations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    city TEXT NOT NULL,
+    latitude NUMERIC NOT NULL,
+    longitude NUMERIC NOT NULL,
+    is_nearest_hub BOOLEAN DEFAULT false,
+    hub_type TEXT DEFAULT 'co-located', -- 'co-located' or 'nearest_practical'
+    connectivity_notes TEXT,
+    destination_id UUID REFERENCES destinations(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS nearest_airport_id UUID REFERENCES airports(id) ON DELETE SET NULL;
+ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS nearest_railway_station_id UUID REFERENCES railway_stations(id) ON DELETE SET NULL;
+ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS nearest_bus_station_id UUID REFERENCES bus_stations(id) ON DELETE SET NULL;
+ALTER TABLE public.destinations ADD COLUMN IF NOT EXISTS connectivity_notes JSONB DEFAULT '{}'::jsonb;
+
+CREATE INDEX IF NOT EXISTS idx_airports_iata ON public.airports(iata_code);
+CREATE INDEX IF NOT EXISTS idx_airports_destination ON public.airports(destination_id);
+CREATE INDEX IF NOT EXISTS idx_railway_stations_code ON public.railway_stations(station_code);
+CREATE INDEX IF NOT EXISTS idx_railway_stations_destination ON public.railway_stations(destination_id);
+CREATE INDEX IF NOT EXISTS idx_bus_stations_destination ON public.bus_stations(destination_id);
+
+ALTER TABLE public.airports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.railway_stations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bus_stations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access on airports" ON public.airports FOR SELECT USING (true);
+CREATE POLICY "Allow public read access on railway_stations" ON public.railway_stations FOR SELECT USING (true);
+CREATE POLICY "Allow public read access on bus_stations" ON public.bus_stations FOR SELECT USING (true);

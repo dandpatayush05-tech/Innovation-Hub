@@ -40,7 +40,7 @@ export const ImpactStats = () => {
             Projected Impact
           </h2>
           <p className="text-teal-100 text-lg max-w-2xl mx-auto">
-            TourEase isn't just about convenience—it's about creating a sustainable, thriving ecosystem for travelers and locals alike.
+            Yatra Setu isn't just about convenience—it's about creating a sustainable, thriving ecosystem for travelers and locals alike.
           </p>
         </div>
 

@@ -7,7 +7,7 @@ import { supabase } from '../config/supabase';
 
 export const getUnifiedBookings = async (req: AuthRequest, res: Response) => {
   const allBookings = await bookingService.getUnifiedBookingsByUser(req.user?.id as string);
-  res.json({ bookings: allBookings });
+  res.json({ data: allBookings, bookings: allBookings });
 };
 
 export const cancelBooking = async (req: AuthRequest, res: Response) => {
@@ -95,7 +95,7 @@ export const getUserBookings = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to fetch bookings', 'INTERNAL_ERROR', undefined);
   }
 
-  res.json({ bookings: bookings || [] });
+  res.json({ data: bookings || [], bookings: bookings || [] });
 };
 
 export const getUserGuideBookings = async (req: AuthRequest, res: Response) => {
@@ -105,7 +105,7 @@ export const getUserGuideBookings = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to fetch guide bookings', 'INTERNAL_ERROR', undefined);
   }
 
-  res.json({ bookings: bookings || [] });
+  res.json({ data: bookings || [], bookings: bookings || [] });
 };
 
 export const createAutoBooking = async (req: AuthRequest, res: Response) => {
@@ -150,5 +150,6 @@ export const getUserAutoBookings = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to fetch auto bookings', 'INTERNAL_ERROR', undefined);
   }
 
-  res.json({ bookings: bookings || [] });
+  res.json({ data: bookings || [], bookings: bookings || [] });
 };
+

@@ -137,9 +137,9 @@ export const Contact = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="w-full md:w-5/12 bg-warm-light rounded-3xl p-8 lg:p-12 flex flex-col justify-center border border-gray-100"
           >
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">See TourEase in action</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">See Yatra Setu in action</h3>
             <p className="text-gray-600 mb-10 leading-relaxed">
-              Whether you're looking to plan the perfect getaway or integrate your business into our smart ecosystem, our team is ready to show you how TourEase simplifies the journey.
+              Whether you're looking to plan the perfect getaway or integrate your business into our smart ecosystem, our team is ready to show you how Yatra Setu simplifies the journey.
             </p>
 
             <div className="space-y-8">
@@ -149,7 +149,7 @@ export const Contact = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Email Us</h4>
-                  <a href="mailto:hello@tourease.app" className="text-primary hover:underline">hello@tourease.app</a>
+                  <a href="mailto:support@yatrasetu.com" className="text-primary hover:underline">support@yatrasetu.com</a>
                 </div>
               </div>
               

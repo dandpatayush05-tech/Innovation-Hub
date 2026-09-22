@@ -7,8 +7,10 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "jest",
     "seed": "tsx scripts/seed-demo-inventory.ts",
     "seed:help": "tsx scripts/seedHelpContent.ts",
+    "seed:hubs": "tsx scripts/seed-transport-hubs.ts",
     "lint": "eslint src/**/*.ts"
   },
   "keywords": [],

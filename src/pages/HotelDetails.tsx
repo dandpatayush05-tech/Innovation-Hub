@@ -3,23 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getHotel, type Hotel } from '../api/hotels';
 import { createBooking } from '../api/bookings';
 import { Checkout } from '../components/Checkout';
-import { MapPin, Star, Building2, Loader2, Info, ArrowLeft, Check, Calendar, Users, Briefcase } from 'lucide-react';
+import { MapPin, Star, Building2, Loader2, Info, ArrowLeft, Check, Calendar, Users, Briefcase, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { generateAndDownloadReceipt } from '../lib/receiptGenerator';
 
 export const HotelDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Booking Form State
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(1);
   const [rooms, setRooms] = useState(1);
-  
+
   // Checkout Flow State
   const [step, setStep] = useState<'details' | 'review' | 'payment' | 'success'>('details');
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -77,10 +78,10 @@ export const HotelDetails = () => {
         total_price: totalPrice,
         occasion: 'vacation' // default
       }) as any; // Type workaround for return structure
-      
+
       const newBookingId = res.booking?.id;
       if (!newBookingId) throw new Error("Failed to retrieve booking ID");
-      
+
       setBookingId(newBookingId);
       setStep('payment');
     } catch (err: any) {
@@ -139,10 +140,10 @@ export const HotelDetails = () => {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Hotel Info */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           <div className="rounded-3xl overflow-hidden aspect-video relative bg-slate-100">
             {hotel.image_url ? (
               <img src={hotel.image_url} alt={hotel.name} className="w-full h-full object-cover" />
@@ -165,7 +166,7 @@ export const HotelDetails = () => {
               <MapPin className="w-4 h-4 mr-1.5" />
               <span>Great Location</span>
             </div>
-            
+
             <h3 className="text-xl font-medium mb-3">About this hotel</h3>
             <p className="text-[#2A2A2A]/80 leading-relaxed whitespace-pre-line mb-8">
               {hotel.description}
@@ -190,7 +191,7 @@ export const HotelDetails = () => {
         {/* Right Column: Booking Widget */}
         <div className="relative">
           <div className="sticky top-6 bg-white rounded-3xl p-6 border border-black/5 shadow-xl shadow-black/[0.03]">
-            
+
             {step === 'details' && (
               <form onSubmit={handleProceedToReview} className="space-y-6">
                 <div>
@@ -206,8 +207,8 @@ export const HotelDetails = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-in</label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         required
                         value={checkIn}
                         onChange={(e) => setCheckIn(e.target.value)}
@@ -216,8 +217,8 @@ export const HotelDetails = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Check-out</label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         required
                         value={checkOut}
                         onChange={(e) => setCheckOut(e.target.value)}
@@ -225,11 +226,11 @@ export const HotelDetails = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Guests</label>
-                      <input 
+                      <input
                         type="number" min="1" required
                         value={guests}
                         onChange={(e) => setGuests(parseInt(e.target.value))}
@@ -238,7 +239,7 @@ export const HotelDetails = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Rooms</label>
-                      <input 
+                      <input
                         type="number" min="1" required
                         value={rooms}
                         onChange={(e) => setRooms(parseInt(e.target.value))}
@@ -248,14 +249,14 @@ export const HotelDetails = () => {
                   </div>
 
                   <div>
-                     <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Room Type</label>
-                     <div className="w-full border border-black/10 bg-slate-50 rounded-xl px-3 py-2 text-sm text-[#2A2A2A]/70 cursor-not-allowed">
-                       Standard Room
-                     </div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Room Type</label>
+                    <div className="w-full border border-black/10 bg-slate-50 rounded-xl px-3 py-2 text-sm text-[#2A2A2A]/70 cursor-not-allowed">
+                      Standard Room
+                    </div>
                   </div>
                 </div>
 
-                <button 
+                <button
                   type="submit"
                   className="w-full bg-[#C84B31] text-white py-3.5 rounded-xl font-medium hover:bg-[#A63A25] transition-colors"
                 >
@@ -269,20 +270,20 @@ export const HotelDetails = () => {
                 <button onClick={() => setStep('details')} className="text-sm font-medium text-[#2A2A2A]/60 hover:text-[#2A2A2A] flex items-center">
                   <ArrowLeft className="w-4 h-4 mr-1" /> Modify details
                 </button>
-                
+
                 <h3 className="text-xl font-medium text-[#2A2A2A]">Review & Confirm</h3>
-                
+
                 <div className="bg-[#FDFBF7] p-4 rounded-2xl border border-black/5 space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Calendar className="w-4 h-4"/> Dates</span>
+                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Dates</span>
                     <span className="font-medium">{days} night(s)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Users className="w-4 h-4"/> Guests</span>
+                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Users className="w-4 h-4" /> Guests</span>
                     <span className="font-medium">{guests} Guest(s)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Briefcase className="w-4 h-4"/> Rooms</span>
+                    <span className="text-[#2A2A2A]/60 flex items-center gap-1.5"><Briefcase className="w-4 h-4" /> Rooms</span>
                     <span className="font-medium">{rooms} Standard Room(s)</span>
                   </div>
                 </div>
@@ -304,7 +305,7 @@ export const HotelDetails = () => {
 
                 {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl">{error}</div>}
 
-                <button 
+                <button
                   onClick={handleCreateBooking}
                   disabled={isSubmitting}
                   className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-[#333] transition-colors disabled:opacity-50 flex justify-center items-center"
@@ -318,8 +319,8 @@ export const HotelDetails = () => {
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <h3 className="text-xl font-medium text-[#2A2A2A]">Complete Payment</h3>
                 <p className="text-sm text-[#2A2A2A]/60">Your booking is reserved pending payment.</p>
-                
-                <Checkout 
+
+                <Checkout
                   bookingId={bookingId}
                   bookingType="hotel"
                   onSuccess={handlePaymentSuccess}
@@ -335,15 +336,42 @@ export const HotelDetails = () => {
                 </div>
                 <h3 className="text-2xl font-serif text-[#2A2A2A]">Booking Confirmed!</h3>
                 <p className="text-sm text-[#2A2A2A]/60">
-                  Your demo reservation at {hotel.name} was successful. An invoice has been generated.
+                  Your demo reservation at {hotel.name} was successful. An official GST tax invoice has been generated.
                 </p>
-                
-                <button 
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full bg-slate-100 text-[#2A2A2A] py-3 rounded-xl font-medium hover:bg-slate-200 transition-colors mt-4"
-                >
-                  Go to Dashboard
-                </button>
+
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={() => generateAndDownloadReceipt({
+                      receiptNumber: `YS-REC-${Date.now().toString().slice(-4)}`,
+                      bookingReference: bookingId ? `YS-HTL-${bookingId.slice(-6)}` : `YS-HTL-${Date.now().toString().slice(-6)}`,
+                      bookingType: 'Hotel Stay',
+                      title: hotel.name,
+                      destination: 'India',
+                      travelDate: checkIn,
+                      customerName: user?.name || 'Valued Guest',
+                      customerEmail: user?.email || 'guest@yatrasetu.com',
+                      totalAmount: totalPrice,
+                      paymentMethod: 'Verified 3D Secure Demo Card',
+                      taxAmount: Math.round(totalPrice * 0.05),
+                      hotelDetails: {
+                        name: hotel.name,
+                        roomType: `${rooms} Room(s) for ${guests} Guest(s)`,
+                        checkIn: checkIn
+                      }
+                    })}
+                    className="w-full bg-stone-900 hover:bg-black text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition shadow-md"
+                  >
+                    <Download className="w-4 h-4 text-amber-400" />
+                    <span>Download Hotel Tax Invoice</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/dashboard/bookings')}
+                    className="w-full bg-stone-100 text-stone-800 py-2.5 rounded-xl text-xs font-semibold hover:bg-stone-200 transition"
+                  >
+                    View My Bookings
+                  </button>
+                </div>
               </div>
             )}
 

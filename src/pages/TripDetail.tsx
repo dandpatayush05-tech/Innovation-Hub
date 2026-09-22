@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Upload, Receipt, Plane, Building2, Map, Bus, Car } from 'lucide-react';
+import { ArrowLeft, Clock, Upload, Receipt, Plane, Building2, Map, Bus, Car, Radio, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { getTrip, getRevisit, uploadTripPhoto } from '../api/trips';
+import { LiveTripMode } from '../components/trips/LiveTripMode';
 
 const TripDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ const TripDetail = () => {
   const [revisit, setRevisit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'live' | 'itinerary' | 'memories'>('live');
 
   useEffect(() => {
     if (id) {
@@ -75,63 +77,85 @@ const TripDetail = () => {
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Experiences
         </button>
 
-        <div className="flex justify-between items-end">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{trip.destination} Trip</h1>
-            <p className="text-gray-500 text-lg">
-              {trip.start_date ? new Date(trip.start_date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Unknown Date'}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C84B31] bg-[#C84B31]/10 px-2.5 py-0.5 rounded-full">
+                Trip Details
+              </span>
+              <span className="text-xs text-gray-400 font-mono">Ref: {id}</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{trip.destination} Trip</h1>
+            <p className="text-gray-500 text-sm sm:text-base mt-1">
+              {trip.start_date ? new Date(trip.start_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Flexible Dates'}
             </p>
           </div>
-          <button 
-            onClick={() => navigate('/destinations')} 
-            className="bg-[#2A2A2A] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-black transition-colors shadow-sm"
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/destinations')} 
+              className="bg-[#2A2A2A] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-colors shadow-sm cursor-pointer"
+            >
+              Explore Stays & Guides
+            </button>
+          </div>
+        </div>
+
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-2 border-b border-black/5 pb-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('live')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === 'live'
+                ? 'bg-[#C84B31] text-white shadow-md shadow-[#C84B31]/20'
+                : 'text-gray-600 hover:bg-black/5 hover:text-black'
+            }`}
           >
-            Visit Again
+            <Radio className="w-4 h-4 animate-pulse" />
+            <span>Live Trip Mode (Today)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('itinerary')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === 'itinerary'
+                ? 'bg-[#C84B31] text-white shadow-md shadow-[#C84B31]/20'
+                : 'text-gray-600 hover:bg-black/5 hover:text-black'
+            }`}
+          >
+            <Map className="w-4 h-4" />
+            <span>Full Itinerary ({trip.hotels.length + trip.flights.length + trip.tours.length + trip.buses.length + trip.autos.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('memories')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === 'memories'
+                ? 'bg-[#C84B31] text-white shadow-md shadow-[#C84B31]/20'
+                : 'text-gray-600 hover:bg-black/5 hover:text-black'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Memories & Photos ({trip.photos?.length || 0})</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            {/* Photos */}
-            <section className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Memories</h2>
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="flex items-center text-sm font-medium text-[#C84B31] bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100"
-                >
-                  <Upload className="w-4 h-4 mr-1.5" />
-                  {uploading ? 'Uploading...' : 'Add Photo'}
-                </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileUpload} 
-                  accept="image/*" 
-                  className="hidden" 
-                />
-              </div>
+        {/* Tab 1: Live Trip Mode */}
+        {activeTab === 'live' && (
+          <LiveTripMode 
+            tripId={id!} 
+            tripDestination={trip.destination || 'Destination'} 
+            rawTripData={trip}
+          />
+        )}
 
-              {trip.photos.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {trip.photos.map((photo: any) => (
-                    <div key={photo.id} className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
-                      <img src={photo.url} alt="Trip memory" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
-                  <Map className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p>No photos yet. Add some memories!</p>
-                </div>
-              )}
-            </section>
-
-            {/* Bookings */}
-            <section className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-900">Itinerary Items</h2>
+        {/* Tab 2: Full Itinerary & Bookings */}
+        {activeTab === 'itinerary' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Bookings */}
+              <section className="space-y-4">
+                <h2 className="text-xl font-bold text-gray-900">Itinerary Items</h2>
               
               {trip.hotels.map((h: any) => (
                 <div key={h.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -222,7 +246,7 @@ const TripDetail = () => {
             {/* Payments */}
             <section className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Payments</h3>
-              {trip.payments.length > 0 ? (
+              {trip.payments && trip.payments.length > 0 ? (
                 <div className="space-y-3">
                   {trip.payments.map((payment: any) => (
                     <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
@@ -232,7 +256,7 @@ const TripDetail = () => {
                       </div>
                       <button 
                         onClick={() => downloadReceipt(payment.id)}
-                        className="text-[#C84B31] bg-white p-2 rounded-lg shadow-sm hover:shadow transition-shadow"
+                        className="text-[#C84B31] bg-white p-2 rounded-lg shadow-sm hover:shadow transition-shadow cursor-pointer"
                         title="Download Receipt"
                       >
                         <Receipt className="w-4 h-4" />
@@ -246,7 +270,52 @@ const TripDetail = () => {
             </section>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Tab 3: Memories & Photos */}
+      {activeTab === 'memories' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-black/5 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-black/5 pb-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Trip Memories & Photos</h3>
+              <p className="text-xs text-gray-500">Capture and store your favorite moments from {trip.destination}.</p>
+            </div>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center text-sm font-semibold text-white bg-[#C84B31] px-4 py-2 rounded-xl hover:bg-[#A63A25] transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              <Upload className="w-4 h-4 mr-1.5" />
+              {uploading ? 'Uploading...' : 'Upload Photo'}
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept="image/*" 
+              className="hidden" 
+            />
+          </div>
+
+          {trip.photos && trip.photos.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {trip.photos.map((photo: any) => (
+                <div key={photo.id} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-black/5 group relative shadow-sm">
+                  <img src={photo.url} alt="Trip memory" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-[#FDFBF7] rounded-2xl border border-dashed border-black/10 text-gray-400 space-y-3">
+              <ImageIcon className="w-12 h-12 mx-auto text-gray-300" />
+              <p className="text-sm font-medium text-gray-600">No photos added yet</p>
+              <p className="text-xs text-gray-400 max-w-sm mx-auto">Upload scenic views, restaurant stops, and ticket stubs to build your live trip scrapbook.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+    </div>
   );
 };
 

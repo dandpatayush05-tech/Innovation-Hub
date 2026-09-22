@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../middleware/authGuard';
 import { supabase } from '../../config/supabase';
-import { NotFoundError, ApiError } from '../../middleware/errorHandler';
+import { NotFoundError, ApiError } from '../../utils/ApiError';
 
 export const getCategories = async (req: AuthRequest, res: Response) => {
   const { data, error } = await supabase

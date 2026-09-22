@@ -24,10 +24,10 @@ export const Navbar = () => {
     >
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="flex items-center justify-between">
-          <a href="#" aria-label="TourEase Home" className="flex items-center gap-2 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1">
-            <Map className="w-8 h-8" aria-hidden="true" />
-            <span className="text-2xl font-heading font-bold text-gray-900 tracking-tight">
-              TourEase
+          <a href="#" aria-label="Yatra Setu Home" className="flex items-center gap-2 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1">
+            <Map className="w-8 h-8 text-[#C84B31]" aria-hidden="true" />
+            <span className="text-2xl font-serif font-bold text-gray-900 tracking-tight">
+              Yatra Setu
             </span>
           </a>
 

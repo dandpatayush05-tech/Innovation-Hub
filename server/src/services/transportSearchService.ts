@@ -18,15 +18,16 @@ const providers: TransportProvider[] = [
   new AutoTransportProvider()
 ];
 
-export const executeTransportSearch = async (from: Coordinate, to: Coordinate, date: string, passengers: number, sortBy: 'price' | 'comfort') => {
-  // 1. Fetch Transport Mode configurations
-  const { data: modes, error } = await supabase.from('transport_modes').select('*');
-  
-  if (error || !modes) {
-    throw new Error('Failed to fetch transport modes config');
-  }
+const DEFAULT_MODE_CONFIGS: TransportModeConfig[] = [
+  { mode: 'flight', base_fare: 1500, rate_per_km: 4.5, comfort_score: 4.5, min_distance_km: 200, max_distance_km: 5000 },
+  { mode: 'bus', base_fare: 250, rate_per_km: 1.8, comfort_score: 3.5, min_distance_km: 20, max_distance_km: 1500 },
+  { mode: 'auto', base_fare: 50, rate_per_km: 12.0, comfort_score: 3.0, min_distance_km: 1, max_distance_km: 80 }
+];
 
-  const modeConfigs = modes as TransportModeConfig[];
+export const executeTransportSearch = async (from: Coordinate, to: Coordinate, date: string, passengers: number, sortBy: 'price' | 'comfort') => {
+  // 1. Fetch Transport Mode configurations with graceful fallback
+  const { data: modes } = await supabase.from('transport_modes').select('*');
+  const modeConfigs = (modes && modes.length > 0) ? (modes as TransportModeConfig[]) : DEFAULT_MODE_CONFIGS;
 
   // 2. Calculate Distances
   const drivingPromise = getDrivingDistance(from, to);

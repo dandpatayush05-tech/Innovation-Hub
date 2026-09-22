@@ -75,8 +75,8 @@ export const Buses = () => {
             <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">From</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Leaving from"
                 value={searchForm.source}
                 onChange={e => setSearchForm({ ...searchForm, source: e.target.value })}
@@ -88,8 +88,8 @@ export const Buses = () => {
             <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">To</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Going to"
                 value={searchForm.destination}
                 onChange={e => setSearchForm({ ...searchForm, destination: e.target.value })}
@@ -99,8 +99,8 @@ export const Buses = () => {
           </div>
           <div className="flex-1">
             <label className="block text-xs font-semibold uppercase tracking-wider text-[#2A2A2A]/60 mb-1">Date</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={searchForm.date}
               onChange={e => setSearchForm({ ...searchForm, date: e.target.value })}
               className="w-full bg-[#FDFBF7] border border-black/10 rounded-xl px-4 py-3 text-[#2A2A2A] focus:outline-none focus:border-[#C84B31]"
@@ -132,7 +132,7 @@ export const Buses = () => {
           <div className="space-y-4">
             {buses.map(bus => (
               <div key={bus.id} className="bg-white border border-black/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row items-center justify-between gap-6">
-                
+
                 {/* Operator Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
@@ -170,7 +170,7 @@ export const Buses = () => {
                 {/* Price & Action */}
                 <div className="text-right shrink-0">
                   <p className="text-2xl font-bold text-[#2A2A2A] mb-3">${bus.price}</p>
-                  <Link 
+                  <Link
                     to={`/dashboard/buses/${bus.id}`}
                     className="inline-block bg-[#2A2A2A] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-black transition-colors"
                   >

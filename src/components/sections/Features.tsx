@@ -10,7 +10,7 @@ export const Features = () => {
         <SectionHeading 
           preTitle="Features"
           title="Everything you need in one place"
-          subtitle="TourEase replaces dozens of travel apps with a single, unified platform designed to make your journey effortless."
+          subtitle="Yatra Setu replaces dozens of travel apps with a single, unified platform designed to make your journey effortless."
           align="center"
           className="mb-16"
         />

@@ -15,7 +15,7 @@ const hashToken = (token: string) => crypto.createHash('sha256').update(token).d
 export const register = async (req: Request, res: Response): Promise<any> => {
   const result = signupSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.issues } });
   }
   const { name, email, password } = result.data;
 
@@ -63,7 +63,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 export const login = async (req: Request, res: Response): Promise<any> => {
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.issues } });
   }
   const { email, password } = result.data;
 
@@ -170,7 +170,7 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
 export const changePassword = async (req: AuthRequest, res: Response): Promise<any> => {
   const result = changePasswordSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.issues } });
   }
 
   const { currentPassword, newPassword } = result.data;
@@ -213,7 +213,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<a
 export const resetPassword = async (req: Request, res: Response): Promise<any> => {
   const result = resetPasswordSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.errors } });
+    return res.status(400).json({ error: { message: 'Validation failed', details: result.error.issues } });
   }
 
   const { email, newPassword } = result.data;

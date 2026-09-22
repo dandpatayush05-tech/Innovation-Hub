@@ -67,6 +67,7 @@ import tripRoutes from './routes/tripRoutes';
 import myTripsRoutes from './routes/myTripsRoutes';
 import helpAdminRoutes from './routes/admin/help';
 import helpRoutes from './routes/helpRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import { authGuard, adminGuard } from './middleware/authGuard';
 
 // Routes
@@ -86,6 +87,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/itineraries', itineraryRoutes);
 app.use('/api/conversations', chatRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Grouped resources mounted at /api to preserve exact paths
 app.use('/api', bookingRoutes);

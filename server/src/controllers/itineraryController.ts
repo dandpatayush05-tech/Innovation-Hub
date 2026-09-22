@@ -28,7 +28,7 @@ export const generateItinerary = async (req: AuthRequest, res: Response) => {
       throw error;
     }
     
-    res.status(201).json({ message: 'Itinerary generated successfully', itinerary });
+    res.status(201).json({ message: 'Itinerary generated successfully', data: itinerary, itinerary });
   } catch (error) {
     console.error('Itinerary generation error:', error);
     throw new ApiError(502, "Couldn't generate your trip — try again", 'INTERNAL_ERROR', undefined);
@@ -49,7 +49,7 @@ export const createItinerary = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to create itinerary', 'INTERNAL_ERROR', undefined);
   }
 
-  res.status(201).json({ itinerary });
+  res.status(201).json({ data: itinerary, itinerary });
 };
 
 export const getItinerary = async (req: AuthRequest, res: Response) => {
@@ -64,7 +64,7 @@ export const getItinerary = async (req: AuthRequest, res: Response) => {
     throw new ForbiddenError('Forbidden', undefined);
   }
 
-  res.json({ itinerary });
+  res.json({ data: itinerary, itinerary });
 };
 
 export const getUserItineraries = async (req: AuthRequest, res: Response) => {
@@ -78,7 +78,7 @@ export const getUserItineraries = async (req: AuthRequest, res: Response) => {
     .eq('user_id', req.params.userId)
     .order('created_at', { ascending: false });
 
-  res.json({ itineraries: itineraries || [] });
+  res.json({ data: itineraries || [], itineraries: itineraries || [] });
 };
 
 export const updateItinerary = async (req: AuthRequest, res: Response) => {
@@ -103,7 +103,7 @@ export const updateItinerary = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to update itinerary', 'INTERNAL_ERROR', undefined);
   }
 
-  res.json({ itinerary });
+  res.json({ data: itinerary, itinerary });
 };
 
 export const deleteItinerary = async (req: AuthRequest, res: Response) => {
@@ -163,5 +163,5 @@ export const duplicateItinerary = async (req: AuthRequest, res: Response) => {
     throw new ApiError(500, 'Failed to duplicate itinerary', 'INTERNAL_ERROR', undefined);
   }
 
-  res.status(201).json({ itinerary: duplicate });
+  res.status(201).json({ data: duplicate, itinerary: duplicate });
 };

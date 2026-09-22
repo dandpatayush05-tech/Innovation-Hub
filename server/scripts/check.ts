@@ -7,11 +7,11 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 async function checkCounts() {
-  const { count: destCount } = await supabase.from('destinations').select('*', { count: 'exact', head: true });
-  const { count: placesCount } = await supabase.from('places').select('*', { count: 'exact', head: true });
-  
-  console.log(`Destinations count: ${destCount}`);
-  console.log(`Places count: ${placesCount}`);
+  const { data: dests, error } = await supabase.from('destinations').select('id, name, country, latitude, longitude');
+  console.log('Existing destinations:', dests);
 }
 
-checkCounts();
+checkCounts().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

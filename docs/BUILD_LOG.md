@@ -850,7 +850,8 @@ All chunks in Phase 1 have been successfully implemented, audited, and hardened.
 
 ### 2. Backend Services
 - **	ripService.ts**: Handles fetching trips (aggregating details across all booking tables) and uploading photos to Supabase Storage.
-- **evisitService.ts**: Implements heuristic logic determining if a user should be prompted to visit a destination again, suggesting the best time.
+- **
+evisitService.ts**: Implements heuristic logic determining if a user should be prompted to visit a destination again, suggesting the best time.
 - **	ripController.ts**: Controllers linking the services to the API endpoints.
 - **pp.ts**: Registered /api/trips route.
 
@@ -875,7 +876,8 @@ pm run build succeeded successfully.
 - Built ScratchCard.tsx (canvas based) for revealing the discount on the frontend.
 - Updated Checkout.tsx to handle arrays of ookingIds, deferring to a robust PaymentSummary.tsx itemized flow.
 - Wired Razorpay flow to handle payment groups, distributing "paid" status downstream to standard payments and ookings.
-- Extended eceiptService.ts to output combined PDF receipts with subtotal/discount/fee breakdowns, exposed via /api/payments/groups/:id/receipt.
+- Extended 
+eceiptService.ts to output combined PDF receipts with subtotal/discount/fee breakdowns, exposed via /api/payments/groups/:id/receipt.
 
 ### Phase 11 — Database Hardening (Consolidation, Integrity, Performance)
 
@@ -930,8 +932,11 @@ pm run build succeeded successfully.
 
 ### 1. Schema Alignment
 - Verified the existing \payments\ and \payment_groups\ schema structure.
-- Appended \ 10_webhook_schema.sql\ to add \ailure_reason\, \eceipt_url\, and \updated_at\ columns to both tables.
-- Renamed \provider_order_id\ and \provider_payment_id\ to \azorpay_order_id\ and \azorpay_payment_id\ in the \payments\ table to align explicitly with the webhook flow.
+- Appended \ 10_webhook_schema.sql\ to add \ailure_reason\, \
+eceipt_url\, and \updated_at\ columns to both tables.
+- Renamed \provider_order_id\ and \provider_payment_id\ to \
+azorpay_order_id\ and \
+azorpay_payment_id\ in the \payments\ table to align explicitly with the webhook flow.
 - Redefined \erify_payment_txn\ and \ackfill_payments_txn\ RPCs to account for the renamed columns.
 
 ### 2. Idempotency & Triggers
@@ -943,12 +948,14 @@ pm run build succeeded successfully.
 ## [Phase 12: Chunks 12b & 12c] 2026-09-19 - Webhook-Driven Confirmation
 
 ### Chunk 12b: Order Creation (Review)
-- Verified that \/api/payments/order\ successfully generates the order through Phase 8's \createPaymentGroup\ logic and returns the \azorpayOrderId\ to the frontend.
+- Verified that \/api/payments/order\ successfully generates the order through Phase 8's \createPaymentGroup\ logic and returns the \
+azorpayOrderId\ to the frontend.
 - Adjusted \erifyRazorpaySignature\ endpoint to NO LONGER confirm bookings locally; it simply verifies the signature and awaits the webhook.
 
 ### Chunk 12c: Webhook Endpoint
 - Implemented \POST /api/payments/webhook\ using \express.raw\ at the top of \pp.ts\ to preserve the raw Buffer required for signature verification.
-- Added \erifyWebhookSignature\ in \azorpayService.ts\ to perform HMAC-SHA256 validation against the \RAZORPAY_WEBHOOK_SECRET\.
+- Added \erifyWebhookSignature\ in \
+azorpayService.ts\ to perform HMAC-SHA256 validation against the \RAZORPAY_WEBHOOK_SECRET\.
 - Added full event handling for \payment.captured\ and \payment.failed\:
   - Idempotency checks to ensure retries do not trigger duplicate notifications or errors.
   - Database updates routed through the transactionally safe \erify_payment_txn\ RPC.
@@ -976,7 +983,8 @@ otifications_log\ table for tracking SMS sent/failed events.
 ## [Phase 12: Chunk 12a] 2026-09-20 - Help Center Schema
 - Added migration \ 12_help_center.sql\ to schema, containing \help_categories\, \help_articles\, and \support_tickets\ tables.
 - Configured RLS to ensure public can read published articles and submit support tickets, but only admins can mutate content.
-- Seeded initial category slugs: \aq\, \ooking-rules\, \cancellation-policy\, \efund-policy\, \payment-policy\, \	erms-and-conditions\, \privacy-policy\.
+- Seeded initial category slugs: \aq\, \ooking-rules\, \cancellation-policy\, \
+efund-policy\, \payment-policy\, \	erms-and-conditions\, \privacy-policy\.
 
 
 ### Chunk 12b: Admin CRUD for Help Content
@@ -987,7 +995,8 @@ otifications_log\ table for tracking SMS sent/failed events.
 
 
 ### Chunk 12c: Public /help Pages
-- Installed \eact-markdown\ to render secure markdown without raw HTML interpretation.
+- Installed \
+eact-markdown\ to render secure markdown without raw HTML interpretation.
 - Created \server/src/routes/helpRoutes.ts\ to serve categories, articles, and execute basic \ILIKE\ search, mounted at \/api/help\. Also included \POST /api/help/contact\ to insert to \support_tickets\.
 - Built \src/pages/Help.tsx\ providing a sidebar category view, search box, and dynamic rendering via \FaqAccordion.tsx\ (for Q&A types) and \PolicyPage.tsx\ (for markdown sections).
 - Built \src/pages/Contact.tsx\ mapping to the support tickets API.
@@ -1032,3 +1041,456 @@ otifications_log\ table for tracking SMS sent/failed events.
 - Removed the standalone 'Login' button from the navigation bar in `src/components/Hero.tsx`.
 - Wired both 'Plan My Trip' buttons (in the nav bar and the prompt card) to navigate directly to the `/login` route using `useNavigate` from React Router.
 - Verified that the `/login` route is correctly registered in `src/App.tsx`.
+
+## [Chunk 24] 2026-09-21 - Homepage & Top Navigation Restructure
+
+### 1. Top Navigation Bar (`src/components/layout/TopNav.tsx`)
+- Built a top navigation bar for the homepage with:
+  - Yatra Setu logo + branding.
+  - Direct navigation category pills for Flights, Hotels, Buses, Cabs, Experiences, and AI Trip Planner.
+  - Real-time `NotificationDropdown` integration with SSE listener.
+  - User profile menu with quick links (My Bookings, Payments, Help & Support, Role-based portal links, Sign Out).
+  - Responsive mobile drawer navigation.
+
+### 2. Layout & Routing Architecture (`src/layouts/HomeLayout.tsx`, `src/App.tsx`)
+- Created `HomeLayout.tsx` which wraps the homepage with `TopNav` and `Footer`.
+- Decoupled `/dashboard` from the sidebar-first `DashboardLayout`, allowing it to serve as the search/booking-first OTA homepage.
+- Maintained `DashboardLayout` with the sticky sidebar for all other logged-in sub-routes (`/dashboard/hotels`, `/dashboard/flights`, `/dashboard/buses`, `/dashboard/auto`, `/dashboard/bookings`, `/dashboard/payments`, etc.).
+
+### 3. OTA-Style Hero Section (`src/pages/Dashboard.tsx`)
+- Replaced the previous basic dashboard header with an interactive OTA booking engine (MakeMyTrip / Airbnb style):
+  - Horizontal service selector tabs: Hotels & Stays, Flights, Buses, Cabs & Auto, Experiences.
+  - Dynamic input fields tailored to each service (Cities/Airports, Check-in/Check-out dates, Departure/Arrival, Pick-up/Drop-off).
+  - Search trigger with URL query parameter propagation to respective listing pages.
+  - Quick trending search suggestion chips.
+
+### 4. Homepage Section Reordering & Visual Hierarchy (`src/pages/Dashboard.tsx`)
+- Reordered the homepage layout below the hero to follow the specified conversion flow:
+  1. **Popular Destinations**: Curated cards with high-res photography, location badges, descriptions, and direct links to destination stay/tour details.
+  2. **AI Trip Planner Promo**: High-converting promo banner highlighting instantaneous custom itinerary generation with preset prompt inspiration chips.
+  3. **Upcoming Trip Spotlight**: Dynamic card pulling real data from `unifiedBookings` showing countdown, date, type icon, status badge, and direct "Manage Trip" action.
+  4. **Experiences Near You**: Handpicked tour cards showcasing categories, ratings, durations, prices, and direct booking actions.
+  5. **Value-Prop Strip**: Four trust pillars emphasizing verified stays & rides, instant confirmations, Razorpay/UPI security, and 24/7 Yatra support.
+- Removed redundant standalone "Upcoming Bookings" list that was previously duplicated at the top of the old dashboard.
+
+### 5. Verification
+- `npx tsc --noEmit` compiles cleanly with zero TypeScript errors across the codebase.
+
+## [Chunk 25] 2026-09-21 - Dynamic Service-Aware Search/Booking Box
+
+### 1. Unified SearchBox Component (`src/components/SearchBox.tsx`)
+- Created a standalone `SearchBox` component driven by a `service` selector (`flights` | `hotels` | `buses` | `cabs` | `experiences`).
+- Integrated `react-hook-form` + `zod` for distinct validation and fieldsets across each service:
+  - **Flights**: One-way / Round-trip / Multi-city toggle, Origin, Destination, Departure Date, Return Date, Travellers count.
+  - **Hotels**: Destination/City, Check-in, Check-out, Guests, Rooms.
+  - **Buses**: From, To, Departure Date, Passengers.
+  - **Cabs**: Pickup Location, Dropoff Location, Date, Time, Cab Type.
+  - **Experiences**: Where / Destination, Date, Category filter.
+- Form submissions dynamically construct URL search parameters and route cleanly to existing search views (`/dashboard/flights`, `/dashboard/hotels`, `/dashboard/buses`, `/dashboard/auto`, `/experiences`).
+- Wrapped forms with `framer-motion` for smooth animated transitions between service tab switches.
+
+### 2. Homepage Hero Wiring (`src/pages/Dashboard.tsx`)
+- Embedded `<SearchBox />` in `Dashboard.tsx`, cleaning up duplicate local states and consolidating the search engine.
+
+## [Chunk 26] 2026-09-21 - AI Trip Planner Redesign
+
+### 1. Signature Input Form (`src/pages/ItineraryGenerator.tsx`)
+- Upgraded the AI Trip Planner with a structured generator form:
+  - Destination input with auto-suggestions and inspiration blueprints.
+  - Date range selectors (Start date & End date) with automatic day duration computation.
+  - Budget selector with step controls (in INR).
+  - Travellers counter.
+  - 7 curated Travel Styles: Cultural & Heritage, Relaxed Leisure, High Adventure, Luxury & Wellness, Budget Backpacker, Foodie & Culinary, Family Friendly.
+  - Custom interests and special requests prompt input.
+- Leverages the existing `/api/itineraries/generate` endpoint with structured prompt synthesis.
+
+### 2. Day-by-Day Card View & Smart Budget Guardrails (`src/pages/ItineraryGenerator.tsx`)
+- Rendered generated itineraries as accordion-style day cards containing flight/stay/meal/activity line items with custom category icons.
+- Implemented **Smart Budget Threat Guardrails**: Dynamically highlights activities exceeding safe percentages of the daily allocation and suggests verified lower-cost alternatives with estimated savings.
+- Built a **"Book Entire Trip"** action that automatically pushes all itinerary line items (stays, daily tours, transport) into the centralized Trip Cart.
+
+## [Chunk 27] 2026-09-21 - Trip Cart / "All-in-One Trip" Summary
+
+### 1. Trip Cart State & Context (`src/context/TripCartContext.tsx`)
+- Created `TripCartContext` providing persistent `localStorage` storage for multi-service trip bookings.
+- Exposes `items`, `tripId`, `addItem`, `addItems`, `removeItem`, `clearCart`, `totalAmount`, `itemCount`, and `isCartOpen`.
+- Wrapped application root in `App.tsx` with `<TripCartProvider>`.
+
+### 2. All-in-One Trip Summary & Checkout (`src/components/cart/TripSummary.tsx`, `src/components/cart/TripCartModal.tsx`, `src/pages/TripCart.tsx`)
+- Built `TripSummary` displaying grouped line items (Flights, Stays, Cabs, Experiences) with individual pricing, taxes/fees (5% GST/platform fee), and running grand total.
+- Wired "Continue to Payment" directly into the existing Razorpay checkout modal via `createRazorpayOrder` and `verifyRazorpayPayment`.
+- Added floating Cart trigger in `TopNav.tsx` with real-time item counter badge.
+- Added dedicated `/cart` route and global `TripCartModal` slide-over.
+
+### 3. Verification
+- `npx tsc --noEmit` passes with 0 errors across all newly created context, components, and pages.
+
+## [Wandor Landing Page] 2026-09-21 - Wandor Hero Landing Page
+
+### 1. Typography & Theme System
+- Integrated Google Fonts `Geist` (400/500/600/700) and `Special Elite` with preconnect links in `index.html`.
+- Extended `tailwind.config.js` with `fontFamily.sans` ('Geist') and `fontFamily.display` ('Special Elite'), alongside custom palette: `wandor.dark` (`#0a0a0a`), `wandor.text` (`#1a1a1a`), `wandor.muted` (`#767676`), and `wandor.prompt` (`#905831`).
+- Set page title to `Wandor — Where will you go next?`.
+
+### 2. Full-Viewport Hero & Liquid Glass Card (`src/components/Hero.tsx`)
+- Single-section full-viewport hero (`min-h-svh`) with continuous looping background video (`autoPlay muted loop playsInline`).
+- Top gradient overlay (`h-[687px]` linear white-to-transparent fade) ensuring high legibility for navigation and headline.
+- Top navigation with typewriter wordmark (`Special Elite`), uppercase centered navigation links, and styled CTA button.
+- Liquid glass frosted prompt card with thick white border (`border-[3px] border-white`), heavy backdrop blur (`backdrop-blur-[20px]`), sample travel prompt, Lucide `Upload` trigger with hidden file selector, and "Plan My Trip" CTA button.
+- Fully responsive across desktop and mobile screens (`max-md`).
+
+### 3. Verification
+- `npm run build` (`tsc -b && vite build`) executes cleanly with exit code 0.
+
+## [Chunk 29] 2026-09-21 - Live Trip Mode & AI Rescheduling
+
+### 1. Live Trip View & Timeline (`src/components/trips/LiveTripMode.tsx`)
+- Created `LiveTripMode` component rendered on active trip details:
+  - Vertical step-by-step timeline of today's confirmed items (flight departure, prepaid airport transfer/cab, resort check-in, heritage tour activity, sunset dinner).
+  - Status badges (`Confirmed`, `Delayed`, `AI Rescheduled`, `In Progress`, `Upcoming`), location badges, departure gates, booking references, and real-time operational notes.
+- Embedded as the primary default view in `TripDetail.tsx` with dedicated view-switcher tabs (Live Trip Mode, Full Itinerary, Memories & Photos).
+
+### 2. Demo-Only Disruption Trigger & AI Reschedule Proposal (`src/components/trips/LiveTripMode.tsx`)
+- Added dev/admin-only "Simulate Flight Delay (+2h)" trigger (`user?.role === 'admin' || import.meta.env.DEV`).
+- Simulates a 2-hour departure delay on flight `6E-204` (08:30 AM → 10:30 AM).
+- Generates side-by-side **Old Plan vs. AI-Updated Plan** comparison card:
+  - Auto-adjusts cab driver pickup window to 12:15 PM with buffer protection.
+  - Automatically notifies front desk of late check-in (02:30 PM).
+  - Reschedules heritage walking tour to sunset golden hour slot (05:00 PM) to avoid overlap and heat.
+  - Preserves dinner reservation at 07:30 PM without conflict.
+- Provides "Accept AI Plan" action that applies the optimized schedule to the live timeline and "Reset Simulation" control.
+
+### 3. Supabase Realtime Synchronization
+- Connected to Supabase Realtime channel `trip-live:${tripId}` to broadcast and receive live disruption and reschedule events across devices.
+- Fallback local state synchronization implemented for offline/development mode.
+
+## [Chunk 30] 2026-09-21 - Sidebar & Post-Login App Shell Cleanup
+
+### 1. Grouped Sidebar Component (`src/components/layout/Sidebar.tsx`)
+- Built a modular `Sidebar` component for the authenticated app shell (`/dashboard/*`) structured into three distinct categories:
+  - **Explore**: Destinations (`/destinations`), Hotels & Stays (`/dashboard/hotels`), Flights (`/dashboard/flights`), Buses (`/dashboard/buses`), Cabs & Auto (`/dashboard/auto`), Experiences (`/experiences`).
+  - **My Travel**: My Trips (`/dashboard/bookings`), AI Trip Planner (`/itinerary-generator`), Payments (`/dashboard/payments`).
+  - **Account**: Profile (`/dashboard/settings`), Settings (`/dashboard/settings`), Help & FAQs (`/help`).
+- Integrated Role-Based Management Portals:
+  - **Business Dashboard** (`/business-dashboard`) visible to `business` and `admin` roles.
+  - **Admin Console** (`/admin-dashboard`) visible exclusively to `admin` role.
+
+### 2. Redundancy Cleanup & Route Polish (`src/layouts/DashboardLayout.tsx`, `src/pages/Settings.tsx`, `src/App.tsx`)
+- Replaced outdated standalone links (`Overview`, `Past Experiences`, `My Itineraries`, duplicated transaction views) with clean categorized links.
+- Created `Settings.tsx` to handle user profile management, travel preferences, live SMS delay alert toggles, and RBAC status.
+- Added `/dashboard/settings` route in `App.tsx` and updated mobile bottom bar navigation.
+
+### 3. Verification
+- `npm run build` (`tsc -b && vite build`) compiles with exit code 0.
+
+## [Chunk 31] 2026-09-21 - Notification Center
+
+### 1. Notification State & Context (`src/context/NotificationContext.tsx`)
+- Built `NotificationContext` providing persistent `localStorage` notification caching and global dispatching capabilities.
+- Integrated Supabase Realtime channel (`user-notifications:${user.id}`) to broadcast and receive real-time disruption, payment, and itinerary notifications across clients.
+
+### 2. Categorized Notification Center (`src/components/layout/NotificationDropdown.tsx`)
+- Replaced basic static notifications with an interactive, categorized Notification Center:
+  - **All Alerts**: Complete feed of travel events.
+  - **Flights & Disruptions**: Gate changes, departure alerts, and +2h delay simulation warnings (sky/red status indicators).
+  - **Stays & Bookings**: Hotel check-in confirmations and AI itinerary synchronizations (blue/purple status indicators).
+  - **Payments**: Verified Razorpay package bookings and transactions (emerald status indicators).
+- Added "Mark as read", "Mark all as read", "Clear all" actions, and responsive dropdown panel.
+- Wired real event dispatchers to Chunk 27 (trip payment verification) and Chunk 29 (simulated flight delays).
+
+## [Chunk 32] 2026-09-21 - Global Search Experience
+
+### 1. Intelligent Global Search Modal (`src/components/search/GlobalSearchModal.tsx`)
+- Created a keyboard-navigable search modal with `Cmd+K` / `Ctrl+K` and Escape shortcut handlers.
+- Features:
+  - Category filters: All, Destinations, Hotels, Flights, Experiences.
+  - Recent searches stored in `localStorage` with one-click search and clear options.
+  - Popular Trending Destinations grid (Goa, Manali, Jaipur, Varanasi, Kerala, Leh-Ladakh).
+  - Debounced real-time query engine combining backend `/api/destinations` with curated stays, activities, and flight routes.
+  - Arrow-key selection and instant routing.
+- Embedded across both `TopNav.tsx` and `DashboardLayout.tsx`.
+
+## [Chunk 33] 2026-09-21 - Offers Section & Micro-interaction Polish
+
+### 1. "Today's Travel Deals" Section (`src/pages/Dashboard.tsx`)
+- Added a 3-column deals strip on the homepage:
+  - ✈️ **Monsoon Airfare Bonanza**: Flat ₹1,500 off domestic flights (`FLYSETU`).
+  - 🏨 **Luxury Heritage Escapes**: 25% discount + free breakfast at 4★ & 5★ resorts (`STAYLUXE`).
+  - 🧭 **Weekend Adventure Pass**: Buy 1 Get 1 Free on rafting and heritage trails (`ADVENTURE15`).
+- One-click copy buttons for promo codes with tactile copy feedback, and direct routing with pre-populated discount query parameters.
+
+### 2. Micro-interactions & Animations
+- Subtle hover elevation (`hover:-translate-y-1 hover:shadow-xl transition-all duration-300`) applied across offer and destination cards.
+- Refined 200–250ms smooth transition on service-tab switches in `SearchBox.tsx`.
+- Polished loading states and receipt download triggers.
+
+## [Chunk 34] 2026-09-21 - Unified Trip & Booking Data Model (Backend)
+
+### 1. Database Schema Hardening (`server/supabase/schema.sql`)
+- Expanded `trips` table with `budget NUMERIC`, `status TEXT DEFAULT 'planned'`, `itinerary JSONB DEFAULT '{}'`, and `updated_at TIMESTAMPTZ`.
+- Created `unified_bookings` table linking all service booking items (`trip_id`, `user_id`, `type`, `provider`, `booking_reference`, `amount`, `status`, `start_time`, `end_time`, `metadata`) into a single queryable source of truth.
+- Added indexes and Row Level Security (RLS) policies.
+
+### 2. Service Layer Integration (`server/src/services/tripService.ts`)
+- Updated `getTripDetails` to query both `unified_bookings` and legacy tables in parallel.
+- Added `createUnifiedTrip` and `createUnifiedBooking` helper methods to support multi-service trip cart and live trip synchronization.
+
+### 3. Verification
+- Frontend build (`npm run build`) passed with exit code 0.
+- Backend type check (`npx tsc --noEmit`) passed with exit code 0.
+
+## [Chunk 35] 2026-09-21 - API & Frontend Structure Alignment (Backend)
+
+### 1. Route Reconciliation & Verification (`server/src/routes/` & `server/src/app.ts`)
+- Reconciled all backend route modules against the intended domain structure:
+  - **Auth**: `/api/auth` (`authRoutes.ts`) — login, register, refresh, logout, password resets, me.
+  - **Destinations & Places**: `/api/destinations` (`destinationRoutes.ts`), `/api/places` (`placeRoutes.ts`).
+  - **Transit (Flights, Buses, Cabs)**: `/api/flights`, `/api/buses`, `/api/transport` (`transportRoutes.ts`).
+  - **Stays & Accommodations**: `/api/hotels` (`hotelRoutes.ts`).
+  - **Experiences & Tours**: `/api/tours` (`tourRoutes.ts`).
+  - **Trips & Experiences**: `/api/trips` (`myTripsRoutes.ts`).
+  - **AI Itinerary Engine**: `/api/itineraries` (`itineraryRoutes.ts`).
+  - **Payments & Receipts**: `/api/payments` (`paymentRoutes.ts`).
+  - **Notification Center**: `/api/notifications` (`notificationRoutes.ts`).
+  - **Help & Support**: `/api/help` (`helpRoutes.ts`), `/api/admin/help` (`admin/help.ts`).
+  - **Chat Widget**: `/api/conversations` (`chatRoutes.ts`).
+
+### 2. Frontend Structure Alignment
+- Reconciled frontend component and page structure:
+  - **Layout & Navigation**: `TopNav.tsx` (Homepage & public discovery), `Sidebar.tsx` (Dashboard & authenticated app shell), `HomeLayout.tsx`, `DashboardLayout.tsx`.
+  - **Search & Booking Engine**: `SearchBox.tsx` (Dynamic tab-driven booking forms), `GlobalSearchModal.tsx` (`Cmd+K` live search modal).
+  - **Trip Management & Live Mode**: `LiveTripMode.tsx` (real-time timeline, +2h disruption simulation), `TripSummary.tsx` (All-in-One Cart checkout), `TripCartModal.tsx`.
+  - **AI Engine**: `ItineraryGenerator.tsx` (smart inputs, budget guardrails), `ItineraryDetail.tsx`.
+  - **Settings & Profile**: `Settings.tsx` (RBAC status, notifications, travel preferences).
+
+### 3. Final Structure Diff & Alignment Summary
+| Domain Area | Frontend API Client | Backend Endpoint | Status |
+| :--- | :--- | :--- | :--- |
+| **Authentication** | `src/api/auth.ts` | `/api/auth/*` | ✅ Aligned |
+| **Destinations** | `src/api/destinations.ts` | `/api/destinations/*` | ✅ Aligned |
+| **Hotels & Stays** | `src/api/hotels.ts` | `/api/hotels/*` | ✅ Aligned |
+| **Flights** | `src/api/flights.ts` | `/api/flights/*` | ✅ Aligned |
+| **Buses** | `src/api/buses.ts` | `/api/buses/*` | ✅ Aligned |
+| **Cabs & Auto** | `src/api/auto.ts` | `/api/transport/*` | ✅ Aligned |
+| **Experiences** | `src/api/tours.ts` | `/api/tours/*` | ✅ Aligned |
+| **AI Planner** | `src/api/itineraries.ts` | `/api/itineraries/*` | ✅ Aligned |
+| **Cart & Payments** | `src/api/payment.ts` | `/api/payments/*` | ✅ Aligned |
+| **Live Trips** | `src/api/trips.ts` | `/api/trips/*` | ✅ Aligned |
+| **Notifications** | `src/api/notifications.ts` | `/api/notifications/*` | ✅ Aligned |
+
+### 4. Known Gaps & Intentional Deferrals
+1. **Third-Party GDS Production Feeds**: Flight and bus search endpoints currently use local mock/sandbox data providers alongside database models for rapid demo stability.
+2. **Push Notifications**: WebPush / ServiceWorker push subscriptions are deferred in favor of Supabase Realtime WebSocket events and browser SSE.
+
+### 5. Verification
+- Frontend build (`npm run build`) completed with 0 errors.
+- Backend type check (`npx tsc --noEmit`) completed with 0 errors.
+
+## [Chunk 36] 2026-09-21 - Experiences Page Redesign + "Places You've Visited"
+
+### 1. Data Path Audit & Root Cause
+- **Why Results Were Empty**:
+  - The backend `server/seed.ts` only populated 3 total tours across 'Cultural', 'Adventure', and 'Wellness' (and none for Heritage, Temple, Nature, Beach, Food Tours, Local Sightseeing, Photography, Family).
+  - When users filtered by unseeded categories, the API returned empty arrays `{ data: [] }`, showing the stark "No experiences found" screen.
+- **Backend Seeding Fix**:
+  - Updated `server/seed.ts` with real-looking, richly detailed entries spanning all 10 canonical categories (Heritage, Temple, Nature, Adventure, Beach, Cultural, Food Tours, Local Sightseeing, Photography, Family) with high-res photography, realistic geo-coordinates, durations, and pricing in INR.
+  - Added enriched fallback data layer `src/data/mockExperiences.ts` to seamlessly merge with live database records.
+
+### 2. Experiences Results Grid & Filter Overhaul
+- **Modular Components Created**:
+  - `src/components/cards/ExperienceCard.tsx`: Standardized experience card with cover photo, category pill, rating + review count, city/location tag, duration, starting price ("From ₹XXX"), Add to Cart trigger, and "View Details" CTA.
+  - `src/components/skeletons/ExperienceCardSkeleton.tsx`: Smooth skeleton pulse animation during fetch transitions.
+- **Unified Filtering**:
+  - Combined search input and category pills (`Heritage`, `Temple`, `Nature`, etc.) into a single synchronized query with URL param sync (`?category=...&q=...`).
+  - Improved empty state with a "Clear All Filters" reset button and suggested category quick-jump pills (`Heritage`, `Adventure`, `Food Tours`, `Beach`).
+
+### 3. "Places You've Visited" Section (`src/components/sections/PlacesVisitedSection.tsx`)
+- Fetches real completed user trip history via `/api/trips`.
+- Renders a horizontal scrolling memory strip showing destination photos/collages, visited dates, and a "See Photos & Revisit" CTA.
+- If the user has no completed trips or is logged out, the section is completely hidden to keep the experience authentic and non-cluttered.
+
+### 4. Verification
+- Frontend production build (`npm run build`) passed with exit code 0.
+- Backend type check (`npx tsc --noEmit`) completed with 0 errors.
+
+## [Chunk 37] 2026-09-22 - Full Backend Build to Match Frontend Contract (All Tabs, Consistent Switching)
+
+### 1. Unified Response Envelope Standard
+- Built a shared response utility (`server/src/utils/response.ts`):
+  - List resources: `{ data: T[], pagination?: { total, page, limit, totalPages } }`
+  - Single resources: `{ data: T }`
+  - Mutation messages: `{ message: string, data?: T }`
+  - Error responses: `{ error: { message: string, code?: string, details?: unknown } }`
+- Standardized all controllers across Destinations, Hotels, Flights, Buses, Transport, Tours/Experiences, Itineraries, Notifications, and Payments to return this uniform envelope. This enables the frontend SearchBox (Flights/Hotels/Buses/Cabs/Experiences) to swap queries and render results seamlessly without bespoke data unpacking.
+
+### 2. Route & Controller Reconciliation
+- **Transport & Flights/Buses (`server/src/routes/transportRoutes.ts`, `server/src/controllers/transportController.ts`)**:
+  - Mounted `GET /api/flights`, `GET /api/flights/search`, `GET /api/flights/:id`.
+  - Mounted `GET /api/buses`, `GET /api/buses/:id`.
+  - Mounted `POST /api/transport/estimate` (returning `{ pickup, drop, vehicle_type, distance_km, estimated_price, eta_minutes }`).
+  - Mounted `POST /api/transport/search` (multi-modal route calculator).
+- **Bookings & Unified Multi-Service Cart (`server/src/controllers/bookingController.ts`, `server/src/routes/bookingRoutes.ts`)**:
+  - Standardized `GET /api/bookings` to return `{ data: UnifiedBooking[] }` with backward-compatible `{ bookings: [...] }`.
+  - Maintained `POST /api/bookings` (hotel), `POST /api/guide-bookings` (tours/experiences), `POST /api/bookings/auto` (cabs), and `POST /api/bookings/:id/cancel`.
+- **Notifications (`server/src/controllers/notificationController.ts`)**:
+  - Standardized `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `POST /api/notifications/mark-all-read`, and `GET /api/notifications/stream` (SSE).
+- **Itineraries (`server/src/controllers/itineraryController.ts`)**:
+  - Standardized `POST /api/itineraries/generate` (LLM-driven day-by-day planner), `POST /api/itineraries`, `GET /api/itineraries/:id`, `PATCH /api/itineraries/:id`, `DELETE /api/itineraries/:id`, and `POST /api/itineraries/:id/duplicate`.
+
+### 3. Database Schema & Comprehensive Indian Travel Seeding (`server/seed.ts`)
+- Seeded **21 real Indian destinations** with complete `intelligence_data` (Varanasi, Goa, Manali, Jaipur, Udaipur, Munnar, Ladakh, Rishikesh, Agra, Amritsar, Andaman, Alleppey, Darjeeling, Hampi, Shillong, Jaisalmer, Shimla, Ooty, Madurai, Pondicherry, Kolkata).
+- Populated rich `intelligence_data` objects: `safety_score`, `crowd_level`, `best_time_to_visit`, `ideal_duration`, `local_tips`, `peak_hours`, `avg_daily_budget`.
+- Seeded luxury & heritage hotels across key hubs.
+- Seeded tours & activities across **all 10 canonical categories**:
+  1. Heritage (Varanasi Ghat Walk)
+  2. Temple (Meenakshi Amman Ancient Temple Tour)
+  3. Nature (Munnar Misty Cloud Walk)
+  4. Adventure (Rishikesh Grade IV Rafting)
+  5. Beach (Havelock Scuba & Reef Dive)
+  6. Cultural (Ladakh Monastery & Stargazing)
+  7. Food Tours (Historic Kolkata Night Food Safari)
+  8. Local Sightseeing (Jaipur Forts & Palaces)
+  9. Photography (Taj Mahal Sunrise Photography)
+  10. Family (Goa Dolphin Cruise & Picnic)
+
+### 4. Cross-Cutting Consistency & Verification
+- Validated date/time ISO 8601 formatting across all endpoints.
+- Validated role-based access control (`authGuard`, `requireRole('business')`, `requireRole('admin')`).
+- Verified both frontend (`npm run build`) and backend (`npm run build --prefix server`) compile with **0 errors**.
+
+## [Chunk 36] 2026-09-22 — Transport & Routing Audit (Phase 4 Groundwork)
+
+### 1. Existing FlightProvider Interface & Implementations
+- **File Locations**:
+  - Interface & Contracts: `server/src/services/flights/types.ts`
+  - Local Mock Implementation: `server/src/services/flights/providers/localFlightProvider.ts`
+  - Provider Switcher / Export: `server/src/services/flights/index.ts`
+  - Controller Usage: `server/src/controllers/flightController.ts`
+  - Dedicated Provider Documentation: `docs/flight-provider.md`
+- **Method Signatures on `FlightProvider`**:
+  - `searchFlights(params: FlightSearchParams): Promise<FlightOption[]>`
+  - `getSchedule(flightNumber: string, date: string): Promise<FlightSchedule>`
+  - `getPrice(flightId: string): Promise<PriceInfo>`
+  - `getBookingInfo(flightId: string): Promise<BookingInfo>`
+- **Return Shapes**:
+  - `FlightOption`: `{ id: string, airline: string, flightNumber: string, origin: string, destination: string, departureTime: string, arrivalTime: string, duration: number, price: number, currency: string, seatsAvailable: number }`
+  - `FlightSchedule`: `{ flightNumber: string, date: string, status: 'SCHEDULED' | 'DELAYED' | 'CANCELLED' | 'IN_AIR' | 'LANDED', estimatedDepartureTime?: string, estimatedArrivalTime?: string }`
+  - `PriceInfo`: `{ flightId: string, basePrice: number, tax: number, fees: number, totalPrice: number, currency: string }`
+  - `BookingInfo`: `{ flightId: string, bookingReference: string, status: 'CONFIRMED' | 'PENDING' | 'FAILED' | 'CANCELLED', ticketingDeadline?: string }`
+- **Current Implementations**: Only `LocalFlightProvider` exists (queries Supabase `flights` table or fallback mock flights); no third-party GDS (Amadeus/Skyscanner) is currently active.
+
+### 2. Current Transport Search Screen
+- **File Locations**: `src/pages/Flights.tsx` (primary unified search), `src/pages/Buses.tsx`, `src/pages/AutoTransport.tsx`.
+- **Fields**: `From` (origin string), `To` (destination string), `Date` (YYYY-MM-DD), `Passengers` (number >= 1), `Sort By` ('price' | 'comfort'), `Search` (action).
+- **Backend Flow**:
+  1. Forward-geocodes origin and destination strings via client-side `geocode()` (`src/utils/geocode.ts` -> OSM Nominatim) into `{ lat, lng }`.
+  2. Calls `searchTransport()` (`src/api/transport.ts` -> `POST /api/transport/search`).
+- **Component Tree**:
+  - `Flights` Page Container
+    - Mode banner & Header
+    - Search Form (`react-hook-form` + Zod schema)
+    - Loading State (`Loader2`)
+    - `renderOptionList()`: Mode icon, carrier info, comfort rating, departure/arrival timestamps, travel duration, distance-based fare calculation, and "Select" CTA linking to `/dashboard/book`.
+
+### 3. Existing Bus / Train / Taxi Code
+- **Bus**: Full stack implemented (`server/src/controllers/busController.ts`, `server/src/services/busService.ts`, `BusTransportProvider` in `server/src/services/transport/providers.ts`, `src/pages/Buses.tsx`, `src/pages/BusDetails.tsx`, `src/components/transport/SeatSelectorGrid.tsx`).
+- **Auto / Taxi**: Full stack implemented (`server/src/controllers/autoController.ts`, `server/src/services/autoService.ts`, `AutoTransportProvider` in `server/src/services/transport/providers.ts`, `server/src/services/distanceService.ts`, `src/pages/AutoTransport.tsx`, `src/api/auto.ts`).
+- **Train**: Mode recognized in data models (`src/types/destination.ts` and `src/data/destinationDetailsData.ts`), but no dedicated `TrainTransportProvider` class or backend controller exists.
+
+### 4. Destinations Data Source & Schema
+- **Data Stores**:
+  - Supabase Database: `destinations` table (`id (uuid)`, `name (text)`, `country (text)`, `description (text)`, `image_url (text)`, `tags (text[])`, `intelligence_data (jsonb)`, `latitude (numeric)`, `longitude (numeric)`, timestamps).
+  - Backend Fallback: `server/src/services/fallbackDataService.ts` (`FALLBACK_DESTINATIONS`).
+  - Frontend Static Curated Data: `src/data/popularDestinationsIndia.ts` (21 destinations) & `src/data/destinationDetailsData.ts` (comprehensive travel, history, and food guides).
+
+### 5. DestinationMap & ChatWidget Compatibility
+- **`DestinationMap.tsx`**: Uses `react-leaflet` with OpenStreetMap tile layers. Accepts `{ latitude: number, longitude: number, name: string }`. Phase 4 transport routing must supply valid float coordinates without breaking this interface.
+- **`ChatWidget.tsx`**: Real-time traveler-to-business messaging over Supabase Channels and `/api/chat/*`. Does not consume transport routes directly, preserving complete decoupling.
+
+### 6. Google Maps Integration Entry Points & Reuse
+- **Frontend**: Zero direct Google Maps JS SDK dependencies (uses `react-leaflet` + OSM Nominatim to eliminate API quota costs).
+- **Backend Entry Points**:
+  - `server/src/services/maps/directionsClient.ts`: Direct integration with Google Routes API (`https://routes.googleapis.com/directions/v2:computeRoutes`) using `env.GOOGLE_MAPS_API_KEY`.
+  - `server/src/services/maps/placesClient.ts`: Direct integration with Google Places API (`https://places.googleapis.com/v1/places`).
+  - `server/src/services/distanceService.ts`: Distance engine utilizing OSRM driving routes with Haversine fallback and 24h LRU caching.
+- **Taxi/Routing Reuse**: Phase 4 should directly leverage `directionsClient.ts` (`getTravelInfo`) and `distanceService.ts` (`getDrivingDistance`) rather than instantiating any new map service.
+
+### 7. Naming & Pattern Collisions to Avoid in Phase 4
+- Do NOT redefine `TransportOption` (already defined in `src/api/transport.ts` and `server/src/services/transport/types.ts`).
+- Do NOT redefine `TransportProvider` (already defined in `server/src/services/transport/types.ts`).
+- Do NOT redefine `FlightProvider` (already defined in `server/src/services/flights/types.ts`).
+- Do NOT duplicate `transportSearchService.ts` (use `server/src/services/transportSearchService.ts`).
+- Do NOT duplicate `distanceService.ts` (use `server/src/services/distanceService.ts`).
+- Do NOT create conflicting routes for `POST /api/transport/search` or `POST /api/transport/estimate`.
+
+## [Chunk 38] 2026-09-22 — Transport Hubs Schema Migration & Seed Data (Phase 4 Database Tier)
+
+### 1. Database Migrations Applied
+- Created migration files following project conventions:
+  - `server/supabase/migrations/014_transport_hubs.sql`
+  - `supabase/migrations/20260922161500_transport_hubs.sql`
+  - Master schema updated: `server/supabase/schema.sql`
+- **Tables Created**:
+  - `airports`: `id` (UUID PK), `iata_code` (VARCHAR(10)), `icao_code` (VARCHAR(10)), `name` (TEXT), `city` (TEXT), `state` (TEXT), `country` (TEXT DEFAULT 'India'), `latitude` (NUMERIC), `longitude` (NUMERIC), `terminal_info` (JSONB), `facilities` (JSONB), `is_nearest_hub` (BOOLEAN), `hub_type` (TEXT: `'co-located'` | `'nearest_practical'`), `connectivity_notes` (TEXT), `destination_id` (UUID FK), timestamps.
+  - `railway_stations`: `id` (UUID PK), `station_code` (VARCHAR(10)), `name` (TEXT), `city` (TEXT), `latitude` (NUMERIC), `longitude` (NUMERIC), `is_nearest_hub` (BOOLEAN), `hub_type` (TEXT), `connectivity_notes` (TEXT), `destination_id` (UUID FK), timestamps.
+  - `bus_stations`: `id` (UUID PK), `name` (TEXT), `city` (TEXT), `latitude` (NUMERIC), `longitude` (NUMERIC), `is_nearest_hub` (BOOLEAN), `hub_type` (TEXT), `connectivity_notes` (TEXT), `destination_id` (UUID FK), timestamps.
+- **`destinations` Table Extension**:
+  - `nearest_airport_id` (UUID FK -> `airports(id)`)
+  - `nearest_railway_station_id` (UUID FK -> `railway_stations(id)`)
+  - `nearest_bus_station_id` (UUID FK -> `bus_stations(id)`)
+  - `connectivity_notes` (JSONB)
+- **Security & Performance**:
+  - Indexes on `iata_code`, `station_code`, and `destination_id` foreign keys.
+  - Row Level Security (RLS) enabled with public read access policies on all 3 tables.
+
+### 2. Transport Hub Seed Data & Reference Mapping
+- Seeded via `server/scripts/seed-transport-hubs.ts` (`npm run seed:hubs`):
+  1. **Jaipur**:
+     - Airport: `JAI` / `VIJP` (Jaipur International Airport, Sanganer) — Co-located
+     - Rail: `JP` (Jaipur Junction Railway Station) — Co-located
+     - Bus: `Jaipur Central Bus Stand (Sindhi Camp ISBT)` — Co-located
+  2. **Varanasi**:
+     - Airport: `VNS` / `VEBN` (Lal Bahadur Shastri International Airport, Babatpur) — Co-located
+     - Rail: `BSB` / `DDU` (Varanasi Junction Cantt & Pt. Deen Dayal Upadhyaya Junction) — Co-located
+     - Bus: `Varanasi Cantt Bus Station (Chaudhary Charan Singh Bus Stand)` — Co-located
+  3. **Manali**:
+     - Airport: `KUU` / `VIBR` (Kullu-Manali Airport, Bhuntar) — **Nearest practical airport, not co-located** (~50km via NH3)
+     - Rail: `CDG` / `KLK` (Chandigarh Junction / Kalka Railhead) — **Nearest practical railhead** (~310km + road transfer)
+     - Bus: `Manali Private & HRTC Volvo Bus Stand (Bhuntar-Manali Highway)` — Co-located
+  4. **Leh-Ladakh**:
+     - Airport: `IXL` / `VILH` (Kushok Bakula Rimpochee Airport, Leh - 3,256m ASL) — **Nearest practical airport** (high altitude; mandatory acclimatization)
+     - Rail: `JAT` (Jammu Tawi / Udhampur Railhead) — **Nearest practical railhead** (~700km)
+     - Bus: `Leh New Bus Stand (JKSRTC / HPTDC Terminal)` — Co-located
+  5. **Munnar**:
+     - Airport: `COK` / `VOCI` (Cochin International Airport, Nedumbassery) — **Nearest practical airport, not co-located** (~110km via mountain NH85)
+     - Rail: `AWY` / `ERS` (Aluva / Ernakulam Junction) — **Nearest practical railhead** (~110km)
+     - Bus: `Munnar KSRTC Bus Stand (Old Munnar / Central)` — Co-located
+  6. **Alleppey** (Alappuzha):
+     - Airport: `COK` / `VOCI` (Cochin International Airport, Nedumbassery) — **Nearest practical airport, not co-located** (~85km via NH66)
+     - Rail: `ALLP` (Alappuzha Railway Station) — Co-located
+     - Bus: `Alappuzha KSRTC Bus Station (Boat Jetty Road)` — Co-located
+  7. **Agra**:
+     - Airport: `AGR` / `VIAG` (Agra Airport, Kheria Air Force Station) — Co-located
+     - Rail: `AGC` / `AF` (Agra Cantt & Agra Fort Railway Stations) — Co-located
+     - Bus: `ISBT Agra (Transport Nagar / Idgah Bus Stand)` — Co-located
+  8. **Rishikesh**:
+     - Airport: `DED` / `VIDN` (Dehradun Jolly Grant Airport) — **Nearest practical airport, not co-located** (~21km via Dehradun-Rishikesh Highway)
+     - Rail: `YNRK` / `HW` (Yog Nagari Rishikesh & Haridwar Junction) — Co-located
+     - Bus: `Rishikesh UTC & Sanyukt Yatra Bus Stand (Natraj Chowk / Haridwar Road)` — Co-located
+  9. **Udaipur**:
+     - Airport: `UDR` / `VAUD` (Maharana Pratap Airport, Dabok) — Co-located
+     - Rail: `UDZ` (Udaipur City Railway Station) — Co-located
+     - Bus: `Udaipur Central Bus Stand (Udiapole ISBT)` — Co-located
+
+### 3. Verification & Live Database Row Counts
+- Executed queries against the linked remote Supabase database:
+  - `destinations`: **11 rows**
+  - `airports`: **9 rows**
+  - `railway_stations`: **9 rows**
+  - `bus_stations`: **9 rows**
+- Verified that all 5 non-co-located airports (`Manali`, `Leh-Ladakh`, `Munnar`, `Alleppey`, `Rishikesh`) are explicitly marked with `hub_type = 'nearest_practical'`, `is_nearest_hub = true`, and descriptive mountain/highway transfer notes.
+
+> [!NOTE]
+> **Forward Scope Note**: In accordance with the chunk scope, no frontend files, API controllers, or routes were modified in this chunk. Frontend migration off hardcoded destination data to dynamic Supabase queries will be handled in a dedicated later chunk.
+
+
