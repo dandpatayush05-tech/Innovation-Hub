@@ -9,7 +9,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, signupSchema as registerSchema } from '../schemas/authSchema';
 import { FieldError } from '../components/FieldError';
 import { PasswordStrength } from '../components/PasswordStrength';
-import { WatercolorDeerMeadowScene } from '../components/WatercolorDeerMeadowScene';
 
 export const Login = () => {
   const location = useLocation();
@@ -63,20 +62,39 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 relative z-0 overflow-hidden">
-      <WatercolorDeerMeadowScene />
-      {/* Yatra Setu Logo */}
-      <Link to="/" className="absolute top-8 left-8 flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity bg-white/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/80 shadow-sm z-20">
-        <Plane className="w-6 h-6 text-[#C84B31]" />
-        <span className="text-xl font-serif tracking-tight font-medium">Yatra Setu</span>
+    <div className="relative min-h-screen w-full flex flex-col justify-center items-center px-4 overflow-hidden">
+      {/* Background video (z-0) */}
+      <video
+        src="https://pollen-batch-41236914.figma.site/_components/v2/f0ee2dae7671c170c34f12e31c4cb41418976c98/769c564298c132f7919405cd9f17c1b1231f341d.769c5642.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
+
+      {/* Top gradient overlay (z-1) */}
+      <div 
+        className="absolute inset-x-0 top-0 h-[687px] pointer-events-none z-[1]"
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)' }}
+      />
+
+      {/* Yatra Setu Brand Logo */}
+      <Link 
+        to="/" 
+        className="absolute top-8 left-8 flex items-center space-x-2 text-black hover:opacity-75 transition-opacity z-20"
+      >
+        <span className="font-display text-[32px] max-md:text-[24px] text-black leading-none select-none tracking-tight">
+          Yatra Setu
+        </span>
       </Link>
 
       <div className="w-full max-w-md z-10 my-8">
-        <div className="bg-white/90 backdrop-blur-xl p-8 md:p-12 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] border border-white/80 ring-1 ring-black/5">
-          <h2 className="text-3xl font-serif text-[#2A2A2A] mb-2">
+        <div className="bg-white/90 backdrop-blur-xl p-8 md:p-12 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-black/5">
+          <h2 className="text-3xl font-display text-[#1A1A1A] mb-2 tracking-tight">
             {isLogin ? 'Welcome back' : 'Begin your journey'}
           </h2>
-          <p className="text-[#2A2A2A]/70 mb-8 font-light text-sm md:text-base">
+          <p className="text-[#1A1A1A]/70 mb-8 font-light text-sm md:text-base">
             {isLogin ? 'Enter your details to access your itineraries.' : 'Create an account to start planning.'}
           </p>
 
