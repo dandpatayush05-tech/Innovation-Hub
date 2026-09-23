@@ -101,12 +101,9 @@ export const Hero: React.FC = () => {
 
         {/* Hero body */}
         <div className="flex flex-col items-center px-6 pt-16 pb-24 text-center">
-          <h1 className="font-sans text-[clamp(40px,6vw,68px)] font-medium text-wandor-text leading-[1.05] tracking-[-0.04em] max-w-[820px] mb-5">
-            Where will you go next?
+          <h1 className="font-sans text-[clamp(40px,6vw,68px)] font-medium text-wandor-text leading-[1.08] tracking-[-0.04em] max-w-[900px] mb-8">
+            One destination.<br />Endless possibilities.
           </h1>
-          <p className="font-sans text-xl font-medium text-wandor-muted leading-relaxed max-w-[500px] mb-10">
-            Tell our AI where you're going and what you love. We'll create a personalized itinerary for you.
-          </p>
 
           {/* Liquid glass prompt card */}
           <div className="relative w-[701px] max-md:w-[calc(100vw-48px)] min-h-[208px] bg-white/[0.06] border-[3px] border-white rounded-[44px] shadow-[0_0_4px_0_rgba(0,0,0,0.15)] overflow-hidden backdrop-blur-[20px]">

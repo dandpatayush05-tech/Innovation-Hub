@@ -42,12 +42,17 @@ create policy "Users can view messages in their conversations"
   );
 
 -- Enable Realtime for messages table
--- Check if publication exists first or just add
 do $$
 begin
   if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     create publication supabase_realtime;
   end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table messages;
+  end if;
 end $$;
 
-alter publication supabase_realtime add table messages;
