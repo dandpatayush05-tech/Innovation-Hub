@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, signupSchema as registerSchema } from '../schemas/authSchema';
 import { FieldError } from '../components/FieldError';
 import { PasswordStrength } from '../components/PasswordStrength';
-import { LandingBackgroundScene } from '../components/LandingBackgroundScene';
+import { WatercolorDeerMeadowScene } from '../components/WatercolorDeerMeadowScene';
 
 export const Login = () => {
   const location = useLocation();
@@ -63,20 +63,20 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center items-center px-4 relative z-0">
-      <LandingBackgroundScene />
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 relative z-0 overflow-hidden">
+      <WatercolorDeerMeadowScene />
       {/* Yatra Setu Logo */}
-      <Link to="/" className="absolute top-8 left-8 flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity">
-        <Plane className="w-8 h-8" />
-        <span className="text-2xl font-serif tracking-tight">Yatra Setu</span>
+      <Link to="/" className="absolute top-8 left-8 flex items-center space-x-2 text-[#2A2A2A] hover:opacity-80 transition-opacity bg-white/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/80 shadow-sm z-20">
+        <Plane className="w-6 h-6 text-[#C84B31]" />
+        <span className="text-xl font-serif tracking-tight font-medium">Yatra Setu</span>
       </Link>
 
-      <div className="w-full max-w-md">
-        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/5">
+      <div className="w-full max-w-md z-10 my-8">
+        <div className="bg-white/90 backdrop-blur-xl p-8 md:p-12 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] border border-white/80 ring-1 ring-black/5">
           <h2 className="text-3xl font-serif text-[#2A2A2A] mb-2">
             {isLogin ? 'Welcome back' : 'Begin your journey'}
           </h2>
-          <p className="text-[#2A2A2A]/60 mb-8 font-light">
+          <p className="text-[#2A2A2A]/70 mb-8 font-light text-sm md:text-base">
             {isLogin ? 'Enter your details to access your itineraries.' : 'Create an account to start planning.'}
           </p>
 
